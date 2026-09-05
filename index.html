@@ -2,30 +2,63 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AnimalVillage — Cube Builder</title>
+<title>AnimalVillage — Medieval Builder</title>
 <style>
-html,body{margin:0;height:100%;overflow:hidden;background:#102719;font-family:system-ui,sans-serif}#info{position:fixed;top:12px;left:12px;padding:12px 14px;border-radius:10px;background:#000b;color:#fff;z-index:2;line-height:1.45;user-select:none}.small{opacity:.75;font-size:12px}
-</style></head><body>
-<div id="info"><b>AnimalVillage — Cube Builder</b><br>🖱️ Gauche : placer · Droit : supprimer le cube regardé<br>⇧ + Gauche : remplir une zone · ⇧ + Droit : supprimer tous les cubes<br><span class="small">WASD : déplacement · Souris : rotation · Roulette : zoom</span></div>
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#152b1b;font-family:system-ui,-apple-system,sans-serif}#hud{position:fixed;inset:0;pointer-events:none;color:#fff;z-index:5}.panel{pointer-events:auto;background:linear-gradient(180deg,#1d2630ee,#111820ee);border:1px solid #ffffff22;box-shadow:0 10px 30px #0008;border-radius:12px}.top{position:absolute;top:12px;left:12px;padding:12px 16px;min-width:290px}.title{font-weight:800;font-size:18px;color:#f3d08a}.stats{display:flex;gap:18px;margin-top:7px;font-size:13px}.toolbar{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:7px;padding:8px}.tool{pointer-events:auto;border:1px solid #ffffff22;background:#28323a;color:#eee;border-radius:9px;padding:9px 11px;cursor:pointer;font-weight:700;font-size:12px}.tool:hover,.tool.active{background:#8a633d;border-color:#e5bd78;color:#fff}.cost{display:block;font-size:10px;opacity:.7;margin-top:2px}.help{position:absolute;right:12px;top:12px;padding:10px 13px;font-size:12px;line-height:1.5;max-width:245px}.actions{position:absolute;right:12px;bottom:14px;display:flex;gap:6px}.actions button{pointer-events:auto;border:0;border-radius:8px;padding:9px 12px;background:#28323a;color:white;cursor:pointer}.msg{position:absolute;left:50%;top:18px;transform:translateX(-50%);padding:8px 14px;background:#111c;color:#fff;border-radius:20px;opacity:0;transition:.2s}.msg.show{opacity:1}.small{opacity:.65;font-size:11px}@media(max-width:700px){.help{display:none}.tool{padding:7px}.toolbar{max-width:96%;overflow-x:auto}.top{min-width:0}.actions{bottom:72px}}
+</style></head>
+<body>
+<div id="hud">
+ <div class="panel top"><div class="title">🏰 AnimalVillage — Village médiéval</div><div class="stats"><span>🪙 <b id="gold">500</b></span><span>👨‍🌾 <b id="pop">0</b></span><span>🏠 <b id="houses">0</b></span></div><div class="small" id="selected">Construction : Maison</div></div>
+ <div class="panel help"><b>Construis ton village</b><br>🖱️ Gauche : placer<br>🖱️ Droit : supprimer<br>⇧ + gauche : construction en série<br>WASD : déplacer · souris : regarder<br>Molette : zoom · R : tourner<br><span class="small">Les bâtiments coûtent de l'or.</span></div>
+ <div id="message" class="msg"></div>
+ <div id="toolbar" class="panel toolbar"></div>
+ <div class="actions"><button id="save">💾 Sauver</button><button id="load">📂 Charger</button><button id="reset">🗑️ Nouveau</button></div>
+</div>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
-const scene=new THREE.Scene();scene.background=new THREE.Color(0x87aeb8);scene.fog=new THREE.Fog(0x87aeb8,45,100);
-const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,200);camera.position.set(10,9,14);
-const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;document.body.appendChild(renderer.domElement);
-scene.add(new THREE.HemisphereLight(0xbddff0,0x203b25,2.2));const sun=new THREE.DirectionalLight(0xffffff,2.5);sun.position.set(15,25,10);sun.castShadow=true;scene.add(sun);
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(40,40),new THREE.MeshStandardMaterial({color:0x174d2a,roughness:1}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
-const grid=new THREE.GridHelper(40,40,0x6a9675,0x315f3c);grid.position.y=.006;scene.add(grid);
-const cubes=new Map(),geo=new THREE.BoxGeometry(.92,.92,.92),mat=new THREE.MeshStandardMaterial({color:0x8b8b8b,roughness:.8}),ray=new THREE.Raycaster(),mouse=new THREE.Vector2(),keys=new Set();
-const k=(x,y,z)=>`${x},${y},${z}`;
-function addCube(x,y,z){const id=k(x,y,z);if(cubes.has(id))return;const c=new THREE.Mesh(geo,mat);c.position.set(x,y+.5,z);c.castShadow=true;c.receiveShadow=true;c.userData.grid={x,y,z};scene.add(c);cubes.set(id,c)}
-function del(c){if(!c?.userData.grid)return;const {x,y,z}=c.userData.grid;scene.remove(c);cubes.delete(k(x,y,z))}
-function clear(){for(const c of cubes.values())scene.remove(c);cubes.clear()}
-function hits(e){const r=renderer.domElement.getBoundingClientRect();mouse.x=(e.clientX-r.left)/r.width*2-1;mouse.y=-(e.clientY-r.top)/r.height*2+1;ray.setFromCamera(mouse,camera);return ray.intersectObjects([ground,...cubes.values()],false)}
-function place(h){let p=h.point.clone();if(h.object!==ground){const n=h.face.normal.clone().transformDirection(h.object.matrixWorld);p.add(n.multiplyScalar(.5))}addCube(Math.floor(p.x+.5),Math.floor(p.y),Math.floor(p.z+.5))}
-function fill(h){const p=h.point,cx=Math.floor(p.x+.5),cz=Math.floor(p.z+.5),r=6;for(let x=cx-r;x<=cx+r;x++)for(let z=cz-r;z<=cz+r;z++)addCube(x,0,z)}
-renderer.domElement.oncontextmenu=e=>e.preventDefault();renderer.domElement.onmousedown=e=>{if(e.button===2&&e.shiftKey){clear();return}const h=hits(e)[0];if(!h)return;if(e.button===0)(e.shiftKey?fill:place)(h);else if(e.button===2){const c=hits(e).find(x=>x.object!==ground)?.object;if(c)del(c)}};
-let yaw=.62,pitch=-.38,locked=false;renderer.domElement.onclick=()=>renderer.domElement.requestPointerLock?.();document.onpointerlockchange=()=>locked=document.pointerLockElement===renderer.domElement;document.onmousemove=e=>{if(!locked)return;yaw-=e.movementX*.0025;pitch-=e.movementY*.0025;pitch=Math.max(-1.45,Math.min(1.45,pitch))};onkeydown=e=>keys.add(e.code);onkeyup=e=>keys.delete(e.code);
-renderer.domElement.onwheel=e=>{e.preventDefault();const f=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));camera.position.addScaledVector(f,e.deltaY*.012);camera.position.y=Math.max(1.2,camera.position.y)};
-let last=performance.now();function animate(t){requestAnimationFrame(animate);const dt=Math.min((t-last)/1000,.05);last=t;const speed=keys.has('ShiftLeft')||keys.has('ShiftRight')?12:6,f=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw)),r=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw)),m=new THREE.Vector3();if(keys.has('KeyW'))m.add(f);if(keys.has('KeyS'))m.sub(f);if(keys.has('KeyD'))m.add(r);if(keys.has('KeyA'))m.sub(r);if(m.lengthSq())camera.position.addScaledVector(m.normalize(),speed*dt);camera.position.y=Math.max(1.2,camera.position.y);camera.lookAt(camera.position.clone().add(new THREE.Vector3(-Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch))));renderer.render(scene,camera)}requestAnimationFrame(animate);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x829da0);scene.fog=new THREE.Fog(0x829da0,55,130);
+const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,220);camera.position.set(13,11,16);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;document.body.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xcfe4e7,0x253c27,2));const sun=new THREE.DirectionalLight(0xfff0ce,2.6);sun.position.set(25,35,15);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-45;sun.shadow.camera.right=45;sun.shadow.camera.top=45;sun.shadow.camera.bottom=-45;scene.add(sun);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(70,70),new THREE.MeshStandardMaterial({color:0x214f2d,roughness:1}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+const grid=new THREE.GridHelper(70,70,0x6f9270,0x3b6842);grid.position.y=.01;scene.add(grid);
+const ray=new THREE.Raycaster(),mouse=new THREE.Vector2(),keys=new Set(),objects=[];let yaw=.65,pitch=-.42,locked=false,rotation=0,gold=500,pop=0;
+const types={
+ house:{name:'Maison',icon:'🏠',cost:50,pop:4,w:3,d:3,h:2.6,roof:3,color:0xb97845,roofColor:0x6b2f27},
+ barn:{name:'Grange',icon:'🌾',cost:80,pop:2,w:4,d:3,h:2.7,roof:3.3,color:0x8b5b38,roofColor:0x8b3029},
+ tavern:{name:'Taverne',icon:'🍺',cost:120,pop:8,w:4,d:4,h:2.8,roof:3.2,color:0xc88b55,roofColor:0x4c3327},
+ smith:{name:'Forge',icon:'⚒️',cost:140,pop:3,w:3,d:3,h:2.5,roof:2.9,color:0x55565a,roofColor:0x292b2d},
+ church:{name:'Église',icon:'⛪',cost:180,pop:12,w:4,d:5,h:4,roof:5,color:0xd2c9ad,roofColor:0x3f4b58},
+ tower:{name:'Tour',icon:'🗼',cost:220,pop:5,w:3,d:3,h:5,roof:6,color:0x81766b,roofColor:0x403a35},
+ well:{name:'Puits',icon:'🪣',cost:35,pop:0,w:2,d:2,h:1.1,roof:0,color:0x77736b,roofColor:0x55514c},
+ wall:{name:'Mur',icon:'🧱',cost:20,pop:0,w:3,d:0.7,h:2,roof:0,color:0x77716a,roofColor:0x55514c}
+};
+let selected='house';const buildings=new Map();
+function key(x,z){return `${x},${z}`}
+function mat(c){return new THREE.MeshStandardMaterial({color:c,roughness:.82})}
+function box(w,h,d,c,y){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));m.position.y=y;m.castShadow=true;m.receiveShadow=true;return m}
+function roof(w,d,h,c){const g=new THREE.ConeGeometry(Math.max(w,d)*.76,h,4);const m=new THREE.Mesh(g,mat(c));m.rotation.y=Math.PI/4;m.castShadow=true;m.receiveShadow=true;return m}
+function makeBuilding(type,x,z,rot=0){const t=types[type],group=new THREE.Group();group.userData={type,x,z};const body=box(t.w,t.h,t.d,t.color,t.h/2);group.add(body);
+ if(type!=='well'&&type!=='wall'){const r=roof(t.w,t.d,t.roof,t.roofColor);r.position.y=t.h+t.roof/2-.05;group.add(r);}
+ if(type==='house'||type==='tavern'||type==='barn'||type==='smith'){const door=box(.62,1.35,.08,0x382319,.68);door.position.z=-t.d/2-.05;group.add(door);for(const sx of [-.85,.85]){const win=box(.48,.55,.08,0x7db3bd,1.45);win.position.x=sx;win.position.z=-t.d/2-.06;group.add(win)}}
+ if(type==='church'){const cross=box(.18,1.2,.18,0x8d6b3c,t.h+1.0);cross.position.z=0;group.add(cross);const cross2=box(.65,.16,.18,0x8d6b3c,t.h+1.25);group.add(cross2)}
+ if(type==='tower'){const slit=box(.35,.65,.08,0x222326,3);slit.position.z=-1.54;group.add(slit)}
+ if(type==='well'){const ring=box(1.7,.35,1.7,0x9a9487,.8);group.add(ring);const post=box(.16,1.8,.16,0x5b4029,1.8);post.position.x=.7;group.add(post);const roofm=box(1.8,.12,.8,0x613c28,2.7);roofm.position.x=.7;group.add(roofm)}
+ if(type==='wall'){const cap=box(t.w+.08,.18,t.d+.08,t.roofColor,2.09);group.add(cap)}
+ group.position.set(x,0,z);group.rotation.y=rot;scene.add(group);objects.push(group);buildings.set(key(x,z),group);return group}
+function removeBuilding(g){if(!g)return;scene.remove(g);const i=objects.indexOf(g);if(i>=0)objects.splice(i,1);const {x,z,type}=g.userData;buildings.delete(key(x,z));gold+=types[type].cost;pop-=types[type].pop;update()}
+function clearAll(){for(const g of [...objects])scene.remove(g);objects.length=0;buildings.clear();gold=500;pop=0;update()}
+function hit(e){const r=renderer.domElement.getBoundingClientRect();mouse.x=(e.clientX-r.left)/r.width*2-1;mouse.y=-(e.clientY-r.top)/r.height*2+1;ray.setFromCamera(mouse,camera);return ray.intersectObjects([ground,...objects],true)}
+function groundCell(e){const h=hit(e).find(v=>v.object===ground||v.object.parent?.userData);if(!h)return null;let p=h.point;if(h.object!==ground){const g=h.object.parent;const n=new THREE.Vector3(0,0,1).applyQuaternion(g.quaternion);p.add(n.multiplyScalar(1.8))}return {x:Math.round(p.x),z:Math.round(p.z)} }
+function buildAt(x,z){const t=types[selected],k=key(x,z);if(buildings.has(k)){notify('⚠️ Une construction est déjà ici');return false}if(gold<t.cost){notify('🪙 Pas assez d’or');return false}if(Math.abs(x)>32||Math.abs(z)>32)return false;makeBuilding(selected,x,z,rotation);gold-=t.cost;pop+=t.pop;update();return true}
+function update(){document.getElementById('gold').textContent=gold;document.getElementById('pop').textContent=pop;document.getElementById('houses').textContent=buildings.size;document.getElementById('selected').textContent='Construction : '+types[selected].icon+' '+types[selected].name+' — '+types[selected].cost+' 🪙'}
+function notify(s){const m=document.getElementById('message');m.textContent=s;m.classList.add('show');clearTimeout(m._t);m._t=setTimeout(()=>m.classList.remove('show'),1200)}
+const toolbar=document.getElementById('toolbar');for(const [id,t] of Object.entries(types)){const b=document.createElement('button');b.className='tool';b.innerHTML=`${t.icon} ${t.name}<span class="cost">${t.cost} 🪙</span>`;b.onclick=()=>{selected=id;document.querySelectorAll('.tool').forEach(x=>x.classList.remove('active'));b.classList.add('active');update()};toolbar.appendChild(b)}toolbar.firstChild.classList.add('active');update();
+renderer.domElement.oncontextmenu=e=>e.preventDefault();renderer.domElement.onmousedown=e=>{if(e.button===2){const h=hit(e).find(v=>v.object.parent?.userData);if(h){removeBuilding(h.object.parent);notify('🧱 Construction supprimée');}return}if(e.button!==0)return;const c=groundCell(e);if(!c)return;if(e.shiftKey){for(let x=c.x-3;x<=c.x+3;x++)for(let z=c.z-3;z<=c.z+3;z++)buildAt(x,z)}else buildAt(c.x,c.z)};
+renderer.domElement.onclick=()=>renderer.domElement.requestPointerLock?.();document.onpointerlockchange=()=>locked=document.pointerLockElement===renderer.domElement;document.onmousemove=e=>{if(!locked)return;yaw-=e.movementX*.0025;pitch-=e.movementY*.0025;pitch=Math.max(-1.45,Math.min(1.45,pitch))};onkeydown=e=>{keys.add(e.code);if(e.code==='KeyR'){rotation=(rotation+Math.PI/2)%(Math.PI*2);notify('↻ Rotation : '+Math.round(rotation*180/Math.PI)+'°')}};onkeyup=e=>keys.delete(e.code);
+renderer.domElement.onwheel=e=>{e.preventDefault();const f=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));camera.position.addScaledVector(f,e.deltaY*.014);camera.position.y=Math.max(2,camera.position.y);camera.position.x=Math.max(-38,Math.min(38,camera.position.x));camera.position.z=Math.max(-38,Math.min(38,camera.position.z))};
+function serialize(){return JSON.stringify({gold,pop,buildings:[...buildings.values()].map(g=>g.userData)})}
+document.getElementById('save').onclick=()=>{localStorage.setItem('animalVillageSave',serialize());notify('💾 Village sauvegardé')};document.getElementById('load').onclick=()=>{const s=localStorage.getItem('animalVillageSave');if(!s){notify('Aucune sauvegarde');return}clearAll();const d=JSON.parse(s);gold=d.gold;pop=d.pop;for(const b of d.buildings)makeBuilding(b.type,b.x,b.z,b.rotation||0);update();notify('📂 Village chargé')};document.getElementById('reset').onclick=()=>{if(confirm('Recommencer le village ?')){clearAll();notify('🌱 Nouveau village')}};
+let last=performance.now();function animate(t){requestAnimationFrame(animate);const dt=Math.min((t-last)/1000,.05);last=t;const speed=keys.has('ShiftLeft')||keys.has('ShiftRight')?13:7;const f=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw)),r=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw)),m=new THREE.Vector3();if(keys.has('KeyW'))m.add(f);if(keys.has('KeyS'))m.sub(f);if(keys.has('KeyD'))m.add(r);if(keys.has('KeyA'))m.sub(r);if(m.lengthSq())camera.position.addScaledVector(m.normalize(),speed*dt);camera.position.x=Math.max(-38,Math.min(38,camera.position.x));camera.position.z=Math.max(-38,Math.min(38,camera.position.z));camera.position.y=Math.max(2,camera.position.y);camera.lookAt(camera.position.clone().add(new THREE.Vector3(-Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch))));renderer.render(scene,camera)}requestAnimationFrame(animate);
 onresize=()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)};
 </script></body></html>
