@@ -1,103 +1,31 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>AnimalVillage — Three.js</title>
-  <style>
-    html,body{margin:0;height:100%;overflow:hidden;background:#87ceeb;font-family:system-ui,sans-serif}
-    #info{position:fixed;top:12px;left:12px;padding:10px 12px;border-radius:10px;background:#0009;color:#fff;z-index:2}
-  </style>
-</head>
-<body>
-  <div id="info"><b>AnimalVillage — Three.js</b><br>Drag = tourner · Wheel = zoom</div>
-  <script type="module">
-    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
-    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/controls/OrbitControls.js';
-
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x87ceeb);
-    scene.fog = new THREE.Fog(0x87ceeb, 25, 70);
-
-    const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 100);
-    camera.position.set(10, 8, 12);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-    renderer.setSize(innerWidth, innerHeight);
-    renderer.shadowMap.enabled = true;
-    document.body.appendChild(renderer.domElement);
-
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 1, 0);
-    controls.enableDamping = true;
-
-    scene.add(new THREE.HemisphereLight(0xbfe8ff, 0x6b7d45, 2));
-    const sun = new THREE.DirectionalLight(0xffffff, 3);
-    sun.position.set(8, 14, 6);
-    sun.castShadow = true;
-    scene.add(sun);
-
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(60, 60),
-      new THREE.MeshStandardMaterial({ color: 0x6aa84f, roughness: 1 })
-    );
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    scene.add(ground);
-
-    function box(x,y,z,sx,sy,sz,color){
-      const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),new THREE.MeshStandardMaterial({color}));
-      m.position.set(x,y,z); m.castShadow=true; m.receiveShadow=true; scene.add(m); return m;
-    }
-
-    // Maison
-    box(0,1,0,4,2,3,0xf2d39b);
-    const roof = new THREE.Mesh(new THREE.ConeGeometry(2.8,1.8,4),new THREE.MeshStandardMaterial({color:0x9b3d30}));
-    roof.position.set(0,2.9,0); roof.rotation.y=Math.PI/4; roof.castShadow=true; scene.add(roof);
-    box(0,0.75,1.56,1,1.5,0.12,0x6d4c41);
-    box(-1.25,1.25,1.56,0.75,0.75,0.12,0x75b8e7);
-    box(1.25,1.25,1.56,0.75,0.75,0.12,0x75b8e7);
-
-    // Arbres
-    for(let i=0;i<14;i++){
-      const x=(Math.random()-0.5)*35, z=(Math.random()-0.5)*35;
-      if(Math.hypot(x,z)<5){ i--; continue; }
-      box(x,1,z,0.45,2,0.45,0x795548);
-      const crown=new THREE.Mesh(new THREE.SphereGeometry(1.4,12,8),new THREE.MeshStandardMaterial({color:0x2f7d32}));
-      crown.position.set(x,2.5,z); crown.castShadow=true; scene.add(crown);
-    }
-
-    // Animal de test
-    const animal = new THREE.Group();
-    const body = new THREE.Mesh(new THREE.BoxGeometry(2,1,1),new THREE.MeshStandardMaterial({color:0xc9a66b}));
-    body.castShadow=true; animal.add(body);
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.9,0.9,0.9),new THREE.MeshStandardMaterial({color:0xd7b57d}));
-    head.position.set(1.25,0.35,0); head.castShadow=true; animal.add(head);
-    for(const z of [-0.35,0.35]){
-      const ear=new THREE.Mesh(new THREE.ConeGeometry(0.22,0.5,4),new THREE.MeshStandardMaterial({color:0x9b7048}));
-      ear.position.set(1.25,0.95,z); ear.rotation.x=Math.PI/2; ear.castShadow=true; animal.add(ear);
-    }
-    for(const x of [-0.65,0.65]) for(const z of [-0.3,0.3]){
-      const leg=new THREE.Mesh(new THREE.BoxGeometry(0.25,1,0.25),new THREE.MeshStandardMaterial({color:0x8b6b4a}));
-      leg.position.set(x,-0.85,z); leg.castShadow=true; animal.add(leg);
-    }
-    animal.position.set(0,2,5);
-    scene.add(animal);
-
-    function animate(){
-      requestAnimationFrame(animate);
-      animal.rotation.y += 0.003;
-      controls.update();
-      renderer.render(scene,camera);
-    }
-    animate();
-
-    addEventListener('resize',()=>{
-      camera.aspect=innerWidth/innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(innerWidth,innerHeight);
-    });
-  </script>
-</body>
-</html>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AnimalVillage — Cube Builder</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#102719;font-family:system-ui,sans-serif}#info{position:fixed;top:12px;left:12px;padding:12px 14px;border-radius:10px;background:#000b;color:#fff;z-index:2;line-height:1.45;user-select:none}.small{opacity:.75;font-size:12px}
+</style></head><body>
+<div id="info"><b>AnimalVillage — Cube Builder</b><br>🖱️ Gauche : placer · Droit : supprimer le cube regardé<br>⇧ + Gauche : remplir une zone · ⇧ + Droit : supprimer tous les cubes<br><span class="small">WASD : déplacement · Souris : rotation · Roulette : zoom</span></div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x87aeb8);scene.fog=new THREE.Fog(0x87aeb8,45,100);
+const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,200);camera.position.set(10,9,14);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;document.body.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xbddff0,0x203b25,2.2));const sun=new THREE.DirectionalLight(0xffffff,2.5);sun.position.set(15,25,10);sun.castShadow=true;scene.add(sun);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(40,40),new THREE.MeshStandardMaterial({color:0x174d2a,roughness:1}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+const grid=new THREE.GridHelper(40,40,0x6a9675,0x315f3c);grid.position.y=.006;scene.add(grid);
+const cubes=new Map(),geo=new THREE.BoxGeometry(.92,.92,.92),mat=new THREE.MeshStandardMaterial({color:0x8b8b8b,roughness:.8}),ray=new THREE.Raycaster(),mouse=new THREE.Vector2(),keys=new Set();
+const k=(x,y,z)=>`${x},${y},${z}`;
+function addCube(x,y,z){const id=k(x,y,z);if(cubes.has(id))return;const c=new THREE.Mesh(geo,mat);c.position.set(x,y+.5,z);c.castShadow=true;c.receiveShadow=true;c.userData.grid={x,y,z};scene.add(c);cubes.set(id,c)}
+function del(c){if(!c?.userData.grid)return;const {x,y,z}=c.userData.grid;scene.remove(c);cubes.delete(k(x,y,z))}
+function clear(){for(const c of cubes.values())scene.remove(c);cubes.clear()}
+function hits(e){const r=renderer.domElement.getBoundingClientRect();mouse.x=(e.clientX-r.left)/r.width*2-1;mouse.y=-(e.clientY-r.top)/r.height*2+1;ray.setFromCamera(mouse,camera);return ray.intersectObjects([ground,...cubes.values()],false)}
+function place(h){let p=h.point.clone();if(h.object!==ground){const n=h.face.normal.clone().transformDirection(h.object.matrixWorld);p.add(n.multiplyScalar(.5))}addCube(Math.floor(p.x+.5),Math.floor(p.y),Math.floor(p.z+.5))}
+function fill(h){const p=h.point,cx=Math.floor(p.x+.5),cz=Math.floor(p.z+.5),r=6;for(let x=cx-r;x<=cx+r;x++)for(let z=cz-r;z<=cz+r;z++)addCube(x,0,z)}
+renderer.domElement.oncontextmenu=e=>e.preventDefault();renderer.domElement.onmousedown=e=>{if(e.button===2&&e.shiftKey){clear();return}const h=hits(e)[0];if(!h)return;if(e.button===0)(e.shiftKey?fill:place)(h);else if(e.button===2){const c=hits(e).find(x=>x.object!==ground)?.object;if(c)del(c)}};
+let yaw=.62,pitch=-.38,locked=false;renderer.domElement.onclick=()=>renderer.domElement.requestPointerLock?.();document.onpointerlockchange=()=>locked=document.pointerLockElement===renderer.domElement;document.onmousemove=e=>{if(!locked)return;yaw-=e.movementX*.0025;pitch-=e.movementY*.0025;pitch=Math.max(-1.45,Math.min(1.45,pitch))};onkeydown=e=>keys.add(e.code);onkeyup=e=>keys.delete(e.code);
+renderer.domElement.onwheel=e=>{e.preventDefault();const f=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));camera.position.addScaledVector(f,e.deltaY*.012);camera.position.y=Math.max(1.2,camera.position.y)};
+let last=performance.now();function animate(t){requestAnimationFrame(animate);const dt=Math.min((t-last)/1000,.05);last=t;const speed=keys.has('ShiftLeft')||keys.has('ShiftRight')?12:6,f=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw)),r=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw)),m=new THREE.Vector3();if(keys.has('KeyW'))m.add(f);if(keys.has('KeyS'))m.sub(f);if(keys.has('KeyD'))m.add(r);if(keys.has('KeyA'))m.sub(r);if(m.lengthSq())camera.position.addScaledVector(m.normalize(),speed*dt);camera.position.y=Math.max(1.2,camera.position.y);camera.lookAt(camera.position.clone().add(new THREE.Vector3(-Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch))));renderer.render(scene,camera)}requestAnimationFrame(animate);
+onresize=()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)};
+</script></body></html>
