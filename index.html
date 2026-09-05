@@ -4,9 +4,9 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AnimalVillage — Village médiéval</title>
 <style>
-html,body{margin:0;height:100%;overflow:hidden;background:#102719;font-family:system-ui,sans-serif}#ui{position:fixed;top:12px;left:12px;right:12px;z-index:5;display:flex;gap:10px;align-items:flex-start;pointer-events:none}#panel,#help{background:#000b;color:#fff;border:1px solid #ffffff22;border-radius:12px;padding:12px 14px;box-shadow:0 8px 30px #0005;backdrop-filter:blur(5px)}#panel{min-width:330px}#res{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:8px}.res{padding:7px 5px;border-radius:8px;background:#ffffff12;text-align:center;font-size:12px}.res b{display:block;font-size:17px}.wood{color:#d69b62}.food{color:#8fd36b}.stone{color:#aaa}.metal{color:#d9d9e5}.gold{color:#ffd65c}#help{margin-left:auto;max-width:370px;font-size:12px;line-height:1.45}.small{opacity:.72;font-size:11px}.selected{outline:2px solid #ffd65c}#msg{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:6;background:#000c;color:#fff;padding:9px 14px;border-radius:10px;opacity:0;transition:.2s;pointer-events:none}button{pointer-events:auto;border:0;border-radius:7px;padding:6px 9px;cursor:pointer;background:#fff2;color:#fff}button:hover{background:#fff3}
+html,body{margin:0;height:100%;overflow:hidden;background:#102719;font-family:system-ui,sans-serif}#ui{position:fixed;top:12px;left:12px;right:12px;z-index:5;display:flex;gap:10px;align-items:flex-start;pointer-events:none}#panel,#help{background:#000b;color:#fff;border:1px solid #ffffff22;border-radius:12px;padding:12px 14px;box-shadow:0 8px 30px #0005;backdrop-filter:blur(5px)}#panel{min-width:330px}#res{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:8px}.res{padding:7px 5px;border-radius:8px;background:#ffffff12;text-align:center;font-size:12px}.res b{display:block;font-size:17px}.wood{color:#d69b62}.food{color:#8fd36b}.stone{color:#aaa}.metal{color:#d9d9e5}.gold{color:#ffd65c}#help{margin-left:auto;max-width:370px;font-size:12px;line-height:1.45}.small{opacity:.72;font-size:11px}#msg{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:6;background:#000c;color:#fff;padding:9px 14px;border-radius:10px;opacity:0;transition:.2s;pointer-events:none}button{pointer-events:auto;border:0;border-radius:7px;padding:6px 9px;cursor:pointer;background:#fff2;color:#fff}button:hover{background:#fff3}
 </style></head><body>
-<div id="ui"><div id="panel"><b>🏰 AnimalVillage</b><div id="res"><div class="res wood">🪵<b id="wood">120</b>Bois</div><div class="res food">🌾<b id="food">100</b>Nourriture</div><div class="res stone">🪨<b id="stone">80</b>Pierre</div><div class="res metal">⚙️<b id="metal">40</b>Métaux</div><div class="res gold">🪙<b id="gold">250</b>Monnaie</div></div><div class="small" id="stats">Population : 5 · Capacité de stockage : 200</div></div><div id="help"><b>Construction</b><br>Gauche : construire · Droit : supprimer · R : tourner<br>⇧ + Gauche : construire en zone · ⇧ + Droit : tout supprimer<br>WASD : déplacement · Souris : rotation · Roulette : zoom<br><span class="small">Clique un bâtiment dans la barre en bas pour le sélectionner.</span></div></div>
+<div id="ui"><div id="panel"><b>🏰 AnimalVillage</b><div id="res"><div class="res wood">🪵<b id="wood">120</b>Bois</div><div class="res food">🌾<b id="food">100</b>Nourriture</div><div class="res stone">🪨<b id="stone">80</b>Pierre</div><div class="res metal">⚙️<b id="metal">40</b>Métaux</div><div class="res gold">🪙<b id="gold">250</b>Monnaie</div></div><div class="small" id="stats">Population : 5 · Bâtiments : 0 · Stockage total : 750</div></div><div id="help"><b>Construction</b><br>Gauche : construire · Droit : supprimer · R : tourner<br>⇧ + Gauche : construire en zone · ⇧ + Droit : tout supprimer<br>WASD : déplacement · Souris : rotation · Roulette : zoom<br><span class="small">Les bâtiments occupent plusieurs tuiles et ne peuvent plus se superposer.</span></div></div>
 <div id="msg"></div>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
@@ -15,43 +15,46 @@ const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,200);camer
 const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;document.body.appendChild(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xbddff0,0x203b25,2.2));const sun=new THREE.DirectionalLight(0xffffff,2.5);sun.position.set(15,25,10);sun.castShadow=true;scene.add(sun);
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(40,40),new THREE.MeshStandardMaterial({color:0x174d2a,roughness:1}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);const grid=new THREE.GridHelper(40,40,0x6a9675,0x315f3c);grid.position.y=.006;scene.add(grid);
-const cubes=new Map();const buildings=[];const ray=new THREE.Raycaster(),mouse=new THREE.Vector2(),keys=new Set();let yaw=.62,pitch=-.38,locked=false,rotation=0,selected='house';
+const buildings=[],occupied=new Map(),ray=new THREE.Raycaster(),mouse=new THREE.Vector2(),keys=new Set();let yaw=.62,pitch=-.38,locked=false,rotation=0,selected='house';
 const resources={wood:120,food:100,stone:80,metal:40,gold:250};const capacity={wood:200,food:200,stone:200,metal:150,gold:1000};
 const types={
- house:{name:'Maison',icon:'🏠',cost:{wood:20,stone:5},pop:4},
- farm:{name:'Ferme',icon:'🌾',cost:{wood:15,gold:5},prod:{food:5},store:0},
- lumber:{name:'Scierie',icon:'🪵',cost:{wood:25,stone:10},prod:{wood:5}},
- quarry:{name:'Carrière',icon:'🪨',cost:{wood:20,stone:10},prod:{stone:4}},
- mine:{name:'Mine',icon:'⛏️',cost:{wood:30,stone:15},prod:{metal:3}},
- market:{name:'Marché',icon:'🪙',cost:{wood:30,stone:15},prod:{gold:4}},
- granary:{name:'Grenier',icon:'🌾',cost:{wood:25,stone:10},storage:{food:150}},
- warehouse:{name:'Entrepôt',icon:'📦',cost:{wood:35,stone:20},storage:{wood:150,stone:100,metal:80}},
- vault:{name:'Trésor',icon:'🏦',cost:{stone:40,metal:10},storage:{gold:500}},
- blacksmith:{name:'Forge',icon:'⚒️',cost:{wood:25,stone:25,metal:5},prod:{metal:2}}
+ house:{name:'Maison',icon:'🏠',size:3,cost:{wood:20,stone:5},pop:4},
+ farm:{name:'Ferme',icon:'🌾',size:4,cost:{wood:15,gold:5},prod:{food:5}},
+ lumber:{name:'Scierie',icon:'🪵',size:3,cost:{wood:25,stone:10},prod:{wood:5}},
+ quarry:{name:'Carrière',icon:'🪨',size:3,cost:{wood:20,stone:10},prod:{stone:4}},
+ mine:{name:'Mine',icon:'⛏️',size:3,cost:{wood:30,stone:15},prod:{metal:3}},
+ market:{name:'Marché',icon:'🪙',size:3,cost:{wood:30,stone:15},prod:{gold:4}},
+ granary:{name:'Grenier',icon:'🌾',size:3,cost:{wood:25,stone:10},storage:{food:150}},
+ warehouse:{name:'Entrepôt',icon:'📦',size:4,cost:{wood:35,stone:20},storage:{wood:150,stone:100,metal:80}},
+ vault:{name:'Trésor',icon:'🏦',size:3,cost:{stone:40,metal:10},storage:{gold:500}},
+ blacksmith:{name:'Forge',icon:'⚒️',size:3,cost:{wood:25,stone:25,metal:5},prod:{metal:2}}
 };
 const mat=(c)=>new THREE.MeshStandardMaterial({color:c,roughness:.8});
-function box(w,h,d,c,x,y,z){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));m.position.set(x,y+h/2,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m}
-function buildVisual(type,x,z){let group=new THREE.Group();const base=mat(0x8b5a3c),roof=mat(0x59332a),stone=mat(0x777777),wood=mat(0x7a4d2d),metal=mat(0x777b82),green=mat(0x47743b),gold=mat(0xd39a24);let w=2.8,d=2.8,h=2.4;
+function box(w,h,d,c,x,y,z){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));m.position.set(x,y+h/2,z);m.castShadow=true;m.receiveShadow=true;return m}
+function buildVisual(type,x,z){const group=new THREE.Group();const base=mat(0x8b5a3c),roof=mat(0x59332a),stone=mat(0x777777),wood=mat(0x7a4d2d),metal=mat(0x777b82),green=mat(0x47743b),gold=mat(0xd39a24);
 if(type==='house'){group.add(box(2.8,2.2,2.8,base,0,0,0));const r=new THREE.Mesh(new THREE.ConeGeometry(2.2,1.5,4),roof);r.rotation.y=Math.PI/4;r.position.y=2.95;group.add(r);group.add(box(.55,1,.12,wood,0,.2,1.42))}
-else if(type==='farm'){w=3;d=3;group.add(box(3,.18,3,green,0,0,0));for(let i=-1;i<=1;i++){const row=box(2.5,.15,.25,0x9b713d,0,.2,i*.7);group.add(row)}}
+else if(type==='farm'){group.add(box(3.7,.18,3.7,green,0,0,0));for(let i=-1;i<=1;i++){group.add(box(3.2,.15,.25,0x9b713d,0,.2,i*.9))}}
 else if(type==='lumber'){group.add(box(2.8,1.5,2.6,wood,0,0,0));for(let i=-1;i<=1;i++)group.add(box(.35,.8,1.8,0xa77a4a,i*.65,1.5,0))}
 else if(type==='quarry'){group.add(box(2.8,.8,2.8,stone,0,0,0));for(let i=0;i<5;i++){const r=new THREE.Mesh(new THREE.DodecahedronGeometry(.45),stone);r.position.set((Math.random()-.5)*2,.9,(Math.random()-.5)*2);group.add(r)}}
 else if(type==='mine'){group.add(box(2.8,1.4,2.6,wood,0,0,0));group.add(box(1.2,1.1,.2,0x222222,0,.1,1.32))}
 else if(type==='market'){group.add(box(2.8,.7,2.8,wood,0,0,0));for(let i=-1;i<=1;i+=2){group.add(box(.12,2,.12,wood,i*1.15,.7,i*1.05))}const roofm=new THREE.Mesh(new THREE.ConeGeometry(2,1.1,4),gold);roofm.rotation.y=Math.PI/4;roofm.position.y=2.55;group.add(roofm)}
 else if(type==='granary'||type==='warehouse'){group.add(box(2.8,2.2,2.6,wood,0,0,0));for(let i=-1;i<=1;i++)group.add(box(.15,2.3,.15,stone,i*1.2,0,1.2))}
 else if(type==='vault'){group.add(box(2.7,2.3,2.7,stone,0,0,0));group.add(box(1.1,1.4,.15,gold,0,.3,1.4))}
-else if(type==='blacksmith'){group.add(box(2.8,1.8,2.7,stone,0,0,0));group.add(box(.8,.5,.8,metal,0,1.8,0));}
- group.position.set(x,0,z);group.rotation.y=rotation;scene.add(group);return group}
-function totalStorage(){let c={...capacity};for(const b of buildings)if(b.storage)for(const [r,v] of Object.entries(b.storage))c[r]+=v;return c}
+else if(type==='blacksmith'){group.add(box(2.8,1.8,2.7,stone,0,0,0));group.add(box(.8,.5,.8,metal,0,1.8,0))}
+group.position.set(x,0,z);group.rotation.y=rotation;scene.add(group);return group}
+function totalStorage(){const c={...capacity};for(const b of buildings)if(b.storage)for(const [r,v] of Object.entries(b.storage))c[r]+=v;return c}
 function canPay(cost){return Object.entries(cost).every(([r,v])=>resources[r]>=v)}function pay(cost){for(const [r,v] of Object.entries(cost))resources[r]-=v}
-function add(type,x,z){const gx=Math.floor(x+.5),gz=Math.floor(z+.5),id=`${gx},${gz}`;if(cubes.has(id))return;const t=types[type];if(!canPay(t.cost)){toast('Ressources insuffisantes');return}pay(t.cost);const visual=buildVisual(type,gx,gz);const b={type,x:gx,z:gz,visual,storage:t.storage,prod:t.prod,pop:t.pop||0};cubes.set(id,b);buildings.push(b);updateUI();}
-function removeAt(hit){const o=hit.object;let b=buildings.find(x=>x.visual===o||x.visual.children.includes(o));if(!b){b=buildings.find(x=>x.visual.children.some(c=>c===o||c.children?.includes(o)))}if(!b)return;scene.remove(b.visual);cubes.delete(`${b.x},${b.z}`);buildings.splice(buildings.indexOf(b),1);updateUI()}
+function footprintCells(type,gx,gz){const size=types[type].size;const half=Math.floor(size/2),cells=[];for(let x=gx-half;x<=gx-half+size-1;x++)for(let z=gz-half;z<=gz-half+size-1;z++)cells.push([x,z]);return cells}
+function canPlace(type,gx,gz){return footprintCells(type,gx,gz).every(([x,z])=>!occupied.has(`${x},${z}`))}
+function add(type,x,z){const gx=Math.floor(x+.5),gz=Math.floor(z+.5),cells=footprintCells(type,gx,gz),t=types[type];if(!canPlace(type,gx,gz)){toast('❌ Emplacement occupé');return false}if(!canPay(t.cost)){toast('Ressources insuffisantes');return false}pay(t.cost);const visual=buildVisual(type,gx,gz),b={type,x:gx,z:gz,visual,storage:t.storage,prod:t.prod,pop:t.pop||0,cells};buildings.push(b);for(const [cx,cz] of cells)occupied.set(`${cx},${cz}`,b);updateUI();return true}
+function removeAt(hit){let b=hit.object.userData.building;while(!b&&hit.object.parent){hit.object=hit.object.parent;b=hit.object.userData.building}if(!b)return;scene.remove(b.visual);for(const [x,z] of b.cells)occupied.delete(`${x},${z}`);buildings.splice(buildings.indexOf(b),1);updateUI()}
 function hits(e){const r=renderer.domElement.getBoundingClientRect();mouse.x=(e.clientX-r.left)/r.width*2-1;mouse.y=-(e.clientY-r.top)/r.height*2+1;ray.setFromCamera(mouse,camera);return ray.intersectObjects([ground,...buildings.map(b=>b.visual)],true)}
-function place(e){const h=hits(e)[0];if(!h)return;if(h.object===ground){if(e.shiftKey){for(let x=-3;x<=3;x++)for(let z=-3;z<=3;z++)add(selected,h.point.x+x,h.point.z+z)}else add(selected,h.point.x,h.point.z)}}
-renderer.domElement.oncontextmenu=e=>e.preventDefault();renderer.domElement.onmousedown=e=>{if(e.button===2&&e.shiftKey){for(const b of [...buildings]){scene.remove(b.visual);cubes.delete(`${b.x},${b.z}`)}buildings.length=0;updateUI();return}if(e.button===0)place(e);else if(e.button===2){const h=hits(e).find(x=>x.object!==ground);if(h)removeAt(h)}};
+function place(e){const h=hits(e)[0];if(!h||h.object!==ground)return;const gx=Math.floor(h.point.x+.5),gz=Math.floor(h.point.z+.5);if(e.shiftKey){const radius=3;for(let x=gx-radius;x<=gx+radius;x++)for(let z=gz-radius;z<=gz+radius;z++)add(selected,x,z)}else add(selected,h.point.x,h.point.z)}
+renderer.domElement.oncontextmenu=e=>e.preventDefault();renderer.domElement.onmousedown=e=>{if(e.button===2&&e.shiftKey){for(const b of [...buildings])scene.remove(b.visual);buildings.length=0;occupied.clear();updateUI();return}if(e.button===0)place(e);else if(e.button===2){const h=hits(e).find(x=>x.object!==ground);if(h)removeAt({object:h.object})}};
 function updateUI(){for(const r of Object.keys(resources))document.getElementById(r).textContent=Math.floor(resources[r]);let pop=5+buildings.reduce((s,b)=>s+b.pop,0),cap=Object.values(totalStorage()).reduce((a,b)=>a+b,0);document.getElementById('stats').textContent=`Population : ${pop} · Bâtiments : ${buildings.length} · Stockage total : ${cap}`}
 function toast(t){const m=document.getElementById('msg');m.textContent=t;m.style.opacity=1;clearTimeout(window.tt);window.tt=setTimeout(()=>m.style.opacity=0,1300)}
-const bar=document.createElement('div');bar.style.cssText='position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:5;display:flex;gap:5px;flex-wrap:wrap;justify-content:center;max-width:95vw';document.body.appendChild(bar);for(const [id,t] of Object.entries(types)){const b=document.createElement('button');b.innerHTML=`${t.icon} ${t.name}`;b.title='Coût : '+Object.entries(t.cost).map(([r,v])=>`${v} ${r}`).join(', ');b.onclick=()=>{selected=id;toast(`${t.icon} ${t.name} sélectionné — coût : ${Object.entries(t.cost).map(([r,v])=>`${v} ${r}`).join(', ')}`)};bar.appendChild(b)}
+const bar=document.createElement('div');bar.style.cssText='position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:5;display:flex;gap:5px;flex-wrap:wrap;justify-content:center;max-width:95vw';document.body.appendChild(bar);for(const [id,t] of Object.entries(types)){const b=document.createElement('button');b.innerHTML=`${t.icon} ${t.name}`;b.title=`Taille : ${t.size}×${t.size} tuiles · Coût : `+Object.entries(t.cost).map(([r,v])=>`${v} ${r}`).join(', ');b.onclick=()=>{selected=id;toast(`${t.icon} ${t.name} sélectionné — ${t.size}×${t.size} tuiles`)};bar.appendChild(b)}
+for(const b of buildings)b.visual.userData.building=b;
 setInterval(()=>{for(const b of buildings){if(b.prod)for(const [r,v] of Object.entries(b.prod)){const s=totalStorage()[r];if(resources[r]<s)resources[r]=Math.min(s,resources[r]+v)}}updateUI()},1000);updateUI();
 renderer.domElement.onclick=()=>renderer.domElement.requestPointerLock?.();document.onpointerlockchange=()=>locked=document.pointerLockElement===renderer.domElement;document.onmousemove=e=>{if(!locked)return;yaw-=e.movementX*.0025;pitch-=e.movementY*.0025;pitch=Math.max(-1.45,Math.min(1.45,pitch))};onkeydown=e=>{keys.add(e.code);if(e.code==='KeyR')rotation+=Math.PI/2};onkeyup=e=>keys.delete(e.code);
 renderer.domElement.onwheel=e=>{e.preventDefault();const f=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));camera.position.addScaledVector(f,e.deltaY*.012);camera.position.y=Math.max(1.2,camera.position.y)};
