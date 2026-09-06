@@ -1,0 +1,58 @@
+name: Fix weather command
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Patch weather command
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          main = Path('src/main.ts')
+          s = main.read_text()
+          old = "function chooseWeather(){const names=Object.keys(weatherDefs);const weights=names.map(k=>{"
+          new = "function setWeather(name){if(!weatherDefs[name])return false;currentWeather=name;weatherClock=0;nextWeather=240+Math.random()*360;toast(weatherDefs[currentWeather].i+' '+weatherDefs[currentWeather].n);updateUI();renderWeather();return true}function chooseWeather(){const names=Object.keys(weatherDefs);const weights=names.map(k=>{"
+          if old not in s:
+              raise SystemExit('main.ts anchor not found')
+          s = s.replace(old, new, 1)
+          old2 = "get currentWeather(){return currentWeather},"
+          new2 = "get currentWeather(){return currentWeather}, setWeather,"
+          if old2 not in s:
+              raise SystemExit('main.ts API anchor not found')
+          s = s.replace(old2, new2, 1)
+          main.write_text(s)
+
+          admin = Path('src/admin.ts')
+          a = admin.read_text()
+          old3 = "const weather:any={beau:'☀️ Beau temps',eclaircies:'🌤️ Éclaircies',nuageux:'☁️ Nuageux',pluie:'🌧️ Pluie',torrentielle:'🌧️ Pluie torrentielle',neige:'🌨️ Neige',tempete:'❄️ Tempête de neige',orage:'⛈️ Orage',ouragan:'🌀 Ouragan',canicule:'🔥 Canicule'};"
+          new3 = "const weather:any={beau:'beau',eclaircies:'eclaircies',nuageux:'nuageux',pluie:'pluie',torrentielle:'torrentielle',neige:'neige',tempete:'blizzard',orage:'orage',ouragan:'ouragan',canicule:'canicule'};const weatherLabel:any={beau:'☀️ Beau temps',eclaircies:'🌤️ Éclaircies',nuageux:'☁️ Nuageux',pluie:'🌧️ Pluie',torrentielle:'🌧️ Pluie torrentielle',neige:'🌨️ Neige',tempete:'❄️ Tempête de neige',orage:'⛈️ Orage',ouragan:'🌀 Ouragan',canicule:'🔥 Canicule'};"
+          if old3 not in a:
+              raise SystemExit('admin weather map anchor not found')
+          a = a.replace(old3, new3, 1)
+          old4 = "api.currentWeather=weather[arg||''];print(`✓ Météo : ${api.currentWeather}`,'success');"
+          new4 = "const key=weather[arg||''];if(!api.setWeather?.(key)){print('❌ Impossible de changer la météo','error');break}print(`✓ Météo : ${weatherLabel[arg||'']}`,'success');"
+          if old4 not in a:
+              raise SystemExit('admin weather command anchor not found')
+          a = a.replace(old4, new4, 1)
+          admin.write_text(a)
+          PY
+      - name: Commit and self-remove workflow
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/main.ts src/admin.ts
+          git commit -m 'fix admin weather command'
+          git rm .github/workflows/fix-weather.yml
+          git commit -m 'remove temporary weather fix workflow'
+          git push
