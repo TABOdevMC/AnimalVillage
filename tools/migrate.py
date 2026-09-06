@@ -23,9 +23,15 @@ js=js.replace('const buildings=[],occupied=', 'const buildings:any[]=[],occupied
 js=js.replace('const buildings:any[]=[],occupied=new Map(),villagers=[],', 'const buildings:any[]=[],occupied=new Map(),villagers:any[]=[],')
 js=js.replace('const seasons=', 'const seasons:any=')
 js=js.replace('const weatherDefs=', 'const weatherDefs:any=')
+js=js.replace('function storage(){const c={...capacity};', 'function storage(){const c:any={...capacity};')
+js=js.replace('Object.entries(techs).forEach(([id,t])=>', 'Object.entries(techs as any).forEach(([id,t]:any)=>')
+js=js.replace('Object.entries(types).forEach(([id,t])=>', 'Object.entries(types as any).forEach(([id,t]:any)=>')
 js=js.replace('s.children[1].onclick=', '(s.children[1] as HTMLElement).onclick=')
 js=js.replace('s.children[2].onclick=', '(s.children[2] as HTMLElement).onclick=')
 js=js.replace('window.toastTimer', '(window as any).toastTimer')
+js=js.replace('Math.floor(resources[r]));', 'String(Math.floor(resources[r])));')
+js=js.replace('msg.style.opacity=1', "msg.style.opacity='1'")
+js=js.replace('msg.style.opacity=0', "msg.style.opacity='0'")
 prefix="""import { installAdmin } from './admin';
 
 const stats=document.getElementById('stats') as HTMLElement;
