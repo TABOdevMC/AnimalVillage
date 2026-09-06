@@ -10,11 +10,14 @@ jobs:
       - run: python3 tools/migrate.py
       - run: npm install
       - run: npm run build
-      - name: Commit generated app
+      - name: Write generated files through GitHub API
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          rm -f .ts-final-trigger .ts-build-trigger-4
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A . ':(exclude)node_modules' ':(exclude)dist'
-          git commit -m 'refactor: migrate game to TypeScript and add admin menu' || exit 0
-          git push
+          set -e
+          index_sha=$(git rev-parse HEAD:index.html)
+          index_b64=$(base64 -w0 index.html)
+          gh api --method PUT repos/TABOdevMC/AnimalVillage/contents/index.html -f message='refactor: move game entry to TypeScript' -f content="$index_b64" -f sha="$index_sha" -f branch=main
+          main_b64=$(base64 -w0 src/main.ts)
+          gh api --method PUT repos/TABOdevMC/AnimalVillage/contents/src/main.ts -f message='refactor: add TypeScript game entry' -f content="$main_b64" -f branch=main
+          gh api --method DELETE repos/TABOdevMC/AnimalVillage/contents/.api-final-trigger -f message='chore: remove migration trigger' -f sha="$(git rev-parse HEAD:.api-final-trigger)" -f branch=main || true
