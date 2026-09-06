@@ -1,5 +1,7 @@
 name: Fix AnimalVillage bootstrap
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: write
@@ -8,15 +10,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Fix index
+      - name: Fix index and commerce
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
           s=s.replace('<script src="./startMessage.js"></script>', '<script>(()=>{const el=document.querySelector("#loader .loaderSub");const messages=["Votre royaume vous attend...","Chaque grande cité commence par un petit village.","Construisez, commercez et développez votre village.","La météo peut changer à tout moment..."];if(el)el.textContent=messages[Math.floor(Math.random()*messages.length)]})();</script>')
-          s=s.replace(".replace(/from ['\\\"]three['\\\"]/g,'from \"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js\").replace(/from ['\\\"]\\./admin['\\\"]/g,'from \"'+adminUrl+'\"')", ".replaceAll(\"from 'three'\",\"from \\\"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js\\\"\").replaceAll('from \\\"three\\\"',\"from \\\"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js\\\").replaceAll(\"from './admin'\",\"from \\\"\"+adminUrl+\"\\\"\").replaceAll('from \\\"./admin\\\"',\"from \\\"\"+adminUrl+\"\\\"\")")
-          s=s.replace(".replace(/from ['\\\"]three['\\\"]/g,'from \"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js\"')", ".replaceAll(\"from 'three'\",\"from \\\"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js\\\"\").replaceAll('from \\\"three\\\"',\"from \\\"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js\\\"\")")
+          s=s.replace(".replace(/from ['\\\"]three['\\\"]/g,'from \"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js\").replace(/from ['\\\"]\\./admin['\\\"]/g,'from \"'+adminUrl+'\"')", ".replaceAll(\"from 'three'\",\"from \\\"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js\\\").replaceAll('from \\\"three\\\"',\"from \\\"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js\\\").replaceAll(\"from './admin'\",\"from \\\"\"+adminUrl+\"\\\"\").replaceAll('from \\\"./admin\\\"',\"from \\\"\"+adminUrl+\"\\\"\")")
+          s=s.replace(".replace(/from ['\\\"]three['\\\"]/g,'from \"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js\"')", ".replaceAll(\"from 'three'\",\"from \\\"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js\\\").replaceAll('from \\\"three\\\"',\"from \\\"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js\\\")")
+          # Commerce is available only when a completed market exists.
+          s=s.replace("function trade(r,n,buy){const p=unitPrice(r);", "function trade(r,n,buy){if(!buildings.some(b=>b.type==='market'&&b.progress>=1))return toast('🔒 Construis et termine un Marché');const p=unitPrice(r);")
+          s=s.replace("function renderMarket(){marketRows.innerHTML='';", "function renderMarket(){marketRows.innerHTML='';if(!buildings.some(b=>b.type==='market'&&b.progress>=1)){marketRows.innerHTML='<div class=\\\"small\\\">🔒 Construis et termine un Marché pour commercer.</div>';return;}")
           p.write_text(s,encoding='utf-8')
           PY
       - name: Remove temporary workflow and commit
@@ -25,5 +30,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html .github/workflows/fix-bootstrap.yml
-          git commit -m 'fix AnimalVillage bootstrap syntax' || exit 0
+          git commit -m 'require market for commerce' || exit 0
           git push
