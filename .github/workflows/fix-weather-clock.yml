@@ -1,0 +1,32 @@
+name: Fix weather clock declaration
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: "!contains(github.event.head_commit.message, '[bot] fix weather clock')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fix mutable clock
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace("const weatherEl=document.getElementById('weather'),weatherClock=0,nextWeather=300,seasonClock=0", "const weatherEl=document.getElementById('weather');let weatherClock=0,nextWeather=300,seasonClock=0")
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit and remove workflow
+        run: |
+          rm -f .github/workflows/fix-weather-clock.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html .github/workflows/fix-weather-clock.yml
+          git commit -m '[bot] fix weather clock'
+          git push
