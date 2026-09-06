@@ -32,7 +32,7 @@ installAdmin({
   resources, capacity, buildings, villagers, occupied, techs, scene, storage, population, updateUI, refreshTools, renderTech, chooseWeather,
   get soldiers(){return soldiers}, set soldiers(v){soldiers=v},
   get research(){return research}, set research(v){research=v},
-  get currentWeather(){return currentWeather},
+  get currentWeather(){return currentWeather}, set currentWeather(v){if(weatherDefs[v])currentWeather=v},
   get freeBuild(){return freeBuild}, set freeBuild(v){freeBuild=v},
   fps:()=>fps
 });
