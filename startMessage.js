@@ -1,0 +1,1 @@
+(()=>{const el=document.querySelector('#loader .loaderSub');if(!el)return;fetch('./startMessage.txt',{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>{const lines=t.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);if(lines.length)el.textContent=lines[Math.floor(Math.random()*lines.length)]}).catch(()=>{});})();
