@@ -19,7 +19,7 @@ export function installAdmin(api: AdminApi) {
   bind('adminFree', () => { api.freeBuild = !api.freeBuild; });
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === '/' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    if (e.key.toLowerCase() === 'z' && !e.ctrlKey && !e.altKey && !e.metaKey) {
       e.preventDefault();
       win.classList.toggle('open');
       refresh();
