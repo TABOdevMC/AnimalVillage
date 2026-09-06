@@ -12,10 +12,22 @@ js=js.replace("let yaw=.62,pitch=-.38,locked=false,rotation=0,selected='house',s
 js=js.replace('function freeWorkers(){return Math.max(0,population()-soldiers-usedWorkers())}', 'function freeWorkers(){return freeBuild?9999:Math.max(0,population()-soldiers-usedWorkers())}')
 js=js.replace('function canPay(c){return Object.entries(c).every(([r,v])=>resources[r]>=v)}', 'function canPay(c){return freeBuild||Object.entries(c).every(([r,v])=>resources[r]>=v)}')
 js=js.replace('function pay(c){Object.entries(c).forEach(([r,v])=>resources[r]-=v)}', 'function pay(c){if(freeBuild)return;Object.entries(c).forEach(([r,v])=>resources[r]-=v)}')
+js=js.replace('const weatherEl=document.getElementById(\'weather\');', 'const weatherEl=document.getElementById(\'weather\') as HTMLElement;')
+js=js.replace('const climate=', 'let climate=')
+js=js.replace('const techs=', 'const techs:any=')
+js=js.replace('const types=', 'const types:any=')
+js=js.replace('const resources=', 'const resources:any=')
+js=js.replace('const capacity=', 'const capacity:any=')
+js=js.replace('const prices=', 'const prices:any=')
+js=js.replace('const buildings=[],occupied=', 'const buildings:any[]=[],occupied=')
+js=js.replace('const buildings:any[]=[],occupied=new Map(),villagers=[],', 'const buildings:any[]=[],occupied=new Map(),villagers:any[]=,')
+js=js.replace('villagers:any[]=,ray=', 'villagers:any[]=[],ray=')
+js=js.replace('const seasons=', 'const seasons:any=')
+js=js.replace('const weatherDefs=', 'const weatherDefs:any=')
 prefix="""import { installAdmin } from './admin';
 
 const stats=document.getElementById('stats') as HTMLElement;
-const climate=document.getElementById('climate') as HTMLElement;
+const climateEl=document.getElementById('climate') as HTMLElement;
 const msg=document.getElementById('msg') as HTMLElement;
 const tools=document.getElementById('tools') as HTMLElement;
 const marketRows=document.getElementById('marketRows') as HTMLElement;
@@ -28,10 +40,12 @@ const armyBtn=document.getElementById('armyBtn') as HTMLButtonElement;
 const techBtn=document.getElementById('techBtn') as HTMLButtonElement;
 const peopleBtn=document.getElementById('peopleBtn') as HTMLButtonElement;
 const weatherBtn=document.getElementById('weatherBtn') as HTMLButtonElement;
-const train=document.getElementById('train') as HTMLButtonElement;
+const trainBtn=document.getElementById('train') as HTMLButtonElement;
 const disband=document.getElementById('disband') as HTMLButtonElement;
 """
 js=prefix+js
+js=js.replace('climate.textContent=', 'climateEl.textContent=')
+js=js.replace('train.onclick=train;', 'trainBtn.onclick=train;')
 js=js.replace('let last=performance.now();', 'let fps=60,last=performance.now();')
 js=js.replace('const dt=Math.min(.05,(now-last)/1000);last=now;', 'const dt=Math.min(.05,(now-last)/1000);last=now;fps=dt>0?1/dt:60;')
 api="""
