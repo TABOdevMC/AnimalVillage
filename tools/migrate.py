@@ -73,7 +73,7 @@ Path('src/main.ts').write_text(js,encoding='utf-8')
 s=s.replace('</style>', '#adminWin{left:12px;right:auto;width:360px;max-height:80vh}#adminWin button{width:calc(50% - 8px)}\n</style>',1)
 admin='''<div id="adminWin" class="window"><h3>🛠️ Admin / Debug</h3><div class="small">Touche / pour ouvrir ou fermer</div><div id="adminInfo" class="small" style="margin:8px 0"></div><button id="adminResources">💰 Ressources max</button><button id="adminSoldiers">⚔️ +100 soldats</button><button id="adminTech">🔬 Toutes les technologies</button><button id="adminFinish">🏗️ Finir constructions</button><button id="adminRepair">❤️ Réparer bâtiments</button><button id="adminWeather">🌦️ Changer météo</button><button id="adminFree">🏠 Construction gratuite</button><button id="adminClear" class="danger">🧹 Supprimer bâtiments</button></div>'''
 s=s.replace('<div id="msg"></div>', admin+'<div id="msg"></div>',1)
-s=re.sub(r'<script type="module">.*?</script>', '<script type="module" src="/AnimalVillage/src/main.ts"></script>', s, count=1, flags=re.S)
+s=re.sub(r'<script type="module">.*?</script>', '<script type="module" src="./src/main.ts"></script>', s, count=1, flags=re.S)
 p.write_text(s,encoding='utf-8')
 
 w=Path('.github/workflows/pages.yml')
