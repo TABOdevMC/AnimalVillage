@@ -18,6 +18,6 @@ jobs:
           rm -f .ts-migration-trigger .ts-build-trigger .ts-build-trigger-2 .ts-build-trigger-3 .ts-build-trigger-4
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
+          git add -A -- ':!node_modules' ':!dist'
           git commit -m 'refactor: migrate game to TypeScript and add admin menu' || exit 0
           git push
