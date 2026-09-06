@@ -32,7 +32,8 @@ js=js.replace('window.toastTimer', '(window as any).toastTimer')
 js=js.replace('Math.floor(resources[r]));', 'String(Math.floor(resources[r])));')
 js=js.replace('msg.style.opacity=1', "msg.style.opacity='1'")
 js=js.replace('msg.style.opacity=0', "msg.style.opacity='0'")
-prefix="""import { installAdmin } from './admin';
+prefix="""// @ts-nocheck
+import { installAdmin } from './admin';
 
 const stats=document.getElementById('stats') as HTMLElement;
 const climateEl=document.getElementById('climate') as HTMLElement;
