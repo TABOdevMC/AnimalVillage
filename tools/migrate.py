@@ -75,27 +75,3 @@ admin='''<div id="adminWin" class="window"><h3>🛠️ Admin / Debug</h3><div cl
 s=s.replace('<div id="msg"></div>', admin+'<div id="msg"></div>',1)
 s=re.sub(r'<script type="module">.*?</script>', '<script type="module" src="./src/main.ts"></script>', s, count=1, flags=re.S)
 p.write_text(s,encoding='utf-8')
-
-w=Path('.github/workflows/pages.yml')
-ws=w.read_text(encoding='utf-8')
-old="""      - name: Upload site
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-"""
-new="""      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - name: Install dependencies
-        run: npm install
-      - name: Build
-        run: npm run build
-      - name: Upload site
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./dist
-"""
-if old in ws:
-    w.write_text(ws.replace(old,new),encoding='utf-8')
