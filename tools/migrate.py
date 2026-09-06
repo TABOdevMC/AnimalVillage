@@ -23,6 +23,9 @@ js=js.replace('const buildings=[],occupied=', 'const buildings:any[]=[],occupied
 js=js.replace('const buildings:any[]=[],occupied=new Map(),villagers=[],', 'const buildings:any[]=[],occupied=new Map(),villagers:any[]=[],')
 js=js.replace('const seasons=', 'const seasons:any=')
 js=js.replace('const weatherDefs=', 'const weatherDefs:any=')
+js=js.replace('s.children[1].onclick=', '(s.children[1] as HTMLElement).onclick=')
+js=js.replace('s.children[2].onclick=', '(s.children[2] as HTMLElement).onclick=')
+js=js.replace('window.toastTimer', '(window as any).toastTimer')
 prefix="""import { installAdmin } from './admin';
 
 const stats=document.getElementById('stats') as HTMLElement;
