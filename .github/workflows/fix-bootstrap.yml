@@ -1,0 +1,29 @@
+name: Fix AnimalVillage bootstrap
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fix index
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('<script src="./startMessage.js"></script>', '<script>(()=>{const el=document.querySelector("#loader .loaderSub");const messages=["Votre royaume vous attend...","Chaque grande cité commence par un petit village.","Construisez, commercez et développez votre village.","La météo peut changer à tout moment..."];if(el)el.textContent=messages[Math.floor(Math.random()*messages.length)]})();</script>')
+          s=s.replace(".replace(/from ['\\\"]three['\\\"]/g,'from \"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js\").replace(/from ['\\\"]\\./admin['\\\"]/g,'from \"'+adminUrl+'\"')", ".replaceAll(\"from 'three'\",\"from \\\"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js\\\"\").replaceAll('from \\\"three\\\"',\"from \\\"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js\\\").replaceAll(\"from './admin'\",\"from \\\"\"+adminUrl+\"\\\"\").replaceAll('from \\\"./admin\\\"',\"from \\\"\"+adminUrl+\"\\\"\")")
+          s=s.replace(".replace(/from ['\\\"]three['\\\"]/g,'from \"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js\"')", ".replaceAll(\"from 'three'\",\"from \\\"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js\\\"\").replaceAll('from \\\"three\\\"',\"from \\\"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js\\\"\")")
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Remove temporary workflow and commit
+        run: |
+          rm -f .github/workflows/fix-bootstrap.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html .github/workflows/fix-bootstrap.yml
+          git commit -m 'fix AnimalVillage bootstrap syntax' || exit 0
+          git push
