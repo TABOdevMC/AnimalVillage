@@ -1,0 +1,31 @@
+name: Apply sky and research fix
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch main
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('src/main.ts')
+          s=p.read_text()
+          if "import { installSky } from './sky';" not in s:
+              s=s.replace("import { installChunkedWorld } from './world';", "import { installChunkedWorld } from './world';\nimport { installSky } from './sky';")
+          if "const updateWorldChunks=installChunkedWorld(scene,camera);" in s and "installSky(scene,camera);" not in s:
+              s=s.replace("const updateWorldChunks=installChunkedWorld(scene,camera);", "const updateWorldChunks=installChunkedWorld(scene,camera);installSky(scene,camera);")
+          s=s.replace("university:{name:'Université',icon:'📚',size:4,cost:{wood:60,stone:50,gold:80},research:3,work:12,tech:'commerce'}", "university:{name:'Université',icon:'📚',size:4,cost:{wood:60,stone:50,gold:80},research:3,work:12,tech:'scholarship'}")
+          p.write_text(s)
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/main.ts
+          git diff --cached --quiet || git commit -m 'fix: require research for university and enable 3D sky'
+          git push
+          git rm .github/workflows/fix-sky-research.yml
+          git commit -m 'chore: remove temporary fix workflow'
+          git push
