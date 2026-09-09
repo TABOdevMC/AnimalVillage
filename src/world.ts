@@ -25,7 +25,12 @@ export function installChunkedWorld(scene:THREE.Scene,camera:THREE.Camera):()=>v
         const p=new THREE.Vector3();target.getWorldPosition(p);
         if(Math.abs(p.x-center.x)<=size&&Math.abs(p.z-center.z)<=size){
           const chunk=target.parent;
-          if(chunk&&chunk.parent===root)root.remove(chunk);
+          if(chunk&&chunk.parent===root){
+            root.remove(chunk);
+            for(const [key,value] of chunks){
+              if(value===chunk){chunks.delete(key);break}
+            }
+          }
         }
       }
     }
