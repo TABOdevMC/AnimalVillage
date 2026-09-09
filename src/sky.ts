@@ -24,6 +24,34 @@ export function installSky(scene: THREE.Scene, camera: THREE.Camera) {
     sky.add(cloud);
   }
 
+  // Soleil 3D : sphère lumineuse dans le ciel, indépendante de l'interface.
+  // La lumière DirectionalLight déjà présente dans main.ts fournit les vraies ombres.
+  const sunGroup=new THREE.Group();
+  sunGroup.name='3DSun';
+  sunGroup.position.set(38,38,-55);
+
+  const sunCore=new THREE.Mesh(
+    new THREE.SphereGeometry(3.2,20,14),
+    new THREE.MeshBasicMaterial({color:0xffef9a})
+  );
+  sunCore.renderOrder=5;
+  sunGroup.add(sunCore);
+
+  const sunHalo=new THREE.Mesh(
+    new THREE.SphereGeometry(5.8,16,12),
+    new THREE.MeshBasicMaterial({color:0xffe58a,transparent:true,opacity:.16,depthWrite:false,blending:THREE.AdditiveBlending})
+  );
+  sunHalo.renderOrder=4;
+  sunGroup.add(sunHalo);
+
+  const sunHalo2=new THREE.Mesh(
+    new THREE.SphereGeometry(9,16,12),
+    new THREE.MeshBasicMaterial({color:0xffd76a,transparent:true,opacity:.045,depthWrite:false,blending:THREE.AdditiveBlending})
+  );
+  sunHalo2.renderOrder=3;
+  sunGroup.add(sunHalo2);
+  sky.add(sunGroup);
+
   // Éclair 3D : visible dans le ciel et accompagné d'un vrai flash lumineux.
   const lightningGroup=new THREE.Group();
   lightningGroup.name='3DLightning';
