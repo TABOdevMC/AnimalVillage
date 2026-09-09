@@ -1,6 +1,7 @@
 name: Fix 3D lightning hook
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
 permissions:
   contents: write
 jobs:
@@ -33,7 +34,8 @@ jobs:
         run: |
           rm -f .github/workflows/fix-lightning.yml
           git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config user.email '41898282+github-actions[bot].com'
+          git config user.email '41898282+github-actions[bot].users.noreply.github.com'
           git add src/main.ts .github/workflows/fix-lightning.yml
           git commit -m 'fix: update 3D lightning every frame'
           git push
