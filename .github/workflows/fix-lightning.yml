@@ -1,0 +1,39 @@
+name: Fix 3D lightning hook
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch main
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p=Path('src/main.ts')
+          s=p.read_text()
+          old="const updateWorldChunks=installChunkedWorld(scene,camera);installSky(scene,camera);"
+          if old in s:
+              s=s.replace(old,"const updateWorldChunks=installChunkedWorld(scene,camera);const updateSky=installSky(scene,camera);",1)
+          elif "const updateSky=installSky(scene,camera);" not in s:
+              raise SystemExit('sky install hook not found')
+          if 'updateSky();' not in s:
+              marker='updateWorldChunks();'
+              if marker not in s: raise SystemExit('world update hook not found')
+              s=s.replace(marker,marker+'updateSky();',1)
+          p.write_text(s)
+          PY
+      - name: Build
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+      - name: Commit and remove workflow
+        run: |
+          rm -f .github/workflows/fix-lightning.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/main.ts .github/workflows/fix-lightning.yml
+          git commit -m 'fix: update 3D lightning every frame'
+          git push
