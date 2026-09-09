@@ -33,21 +33,32 @@ export function installSaveSystem(){
   const snapshot=():SaveState|null=>api()?.save?.()||null;
   const restore=(data:SaveState)=>api()?.load?.(data);
 
+  const old=document.getElementById('saveWin');
+  if(old)old.remove();
+  const oldButton=document.getElementById('saveBtn');
+  if(oldButton)oldButton.remove();
+
   const panel=document.createElement('div');
   panel.id='saveWin';panel.className='window';
-  panel.innerHTML='<h3>💾 Sauvegardes</h3><div class="settingCard"><p class="small">Sauvegarde automatique dans ce navigateur, ou export/import en fichier JSON.</p><button id="saveBrowser">💾 Sauvegarder (navigateur)</button><button id="saveExport">⬇️ Export sauvegarde</button><button id="saveImport">⬆️ Charger sauvegarde</button><div id="saveStatus" class="small" style="margin-top:8px"></div></div>';
+  panel.innerHTML='<h3>💾 Sauvegardes <button id="saveClose" style="float:right">✕</button></h3><div class="settingCard"><p class="small">Gérez votre partie : sauvegarde locale, export ou import JSON.</p><button id="saveBrowser">💾 Sauvegarder</button><button id="saveExport">⬇️ Exporter</button><button id="saveImport">⬆️ Charger</button><div id="saveStatus" class="small" style="margin-top:8px"></div></div>';
   document.body.appendChild(panel);
-  const status=()=>{const s=el('saveStatus');if(s)s.textContent=localStorage.getItem(KEY)?'✓ Une sauvegarde navigateur existe':'Aucune sauvegarde navigateur';};
-  document.getElementById('saveBrowser')!.onclick=()=>{const data=snapshot();if(!data)return toast('❌ État du jeu indisponible');localStorage.setItem(KEY,JSON.stringify(data));status();toast('✓ Partie sauvegardée dans le navigateur');};
+
+  const status=()=>{const s=el('saveStatus');if(s)s.textContent=localStorage.getItem(KEY)?'✓ Sauvegarde navigateur disponible':'Aucune sauvegarde navigateur';};
+  document.getElementById('saveBrowser')!.onclick=()=>{const data=snapshot();if(!data)return toast('❌ État du jeu indisponible');localStorage.setItem(KEY,JSON.stringify(data));status();toast('✓ Partie sauvegardée');};
   document.getElementById('saveExport')!.onclick=()=>{const data=snapshot();if(data)downloadJSON(data);else toast('❌ État du jeu indisponible');};
-  document.getElementById('saveImport')!.onclick=()=>openFile(data=>restore(data));
+  document.getElementById('saveImport')!.onclick=()=>openFile(data=>{restore(data);status()});
+  document.getElementById('saveClose')!.onclick=()=>panel.classList.remove('open');
   status();
 
   const button=document.createElement('button');button.id='saveBtn';button.textContent='💾 Sauvegardes';
-  const panelRoot=el('panel');panelRoot?.appendChild(button);
+  const panelRoot=el('panel');
+  if(panelRoot)panelRoot.appendChild(button);
   button.onclick=()=>panel.classList.toggle('open');
 
   window.addEventListener('beforeunload',()=>{const data=snapshot();if(data)localStorage.setItem(KEY,JSON.stringify(data));});
   (window as any).loadBrowserSave=()=>{const raw=localStorage.getItem(KEY);if(!raw)return false;try{restore(JSON.parse(raw));return true}catch{return false}};
   (window as any).saveBrowser=()=>{const data=snapshot();if(!data)return false;localStorage.setItem(KEY,JSON.stringify(data));return true};
 }
+
+// Le module est chargé après main.ts : le bouton est donc installé automatiquement.
+installSaveSystem();
