@@ -1,0 +1,42 @@
+name: Patch villager model
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Improve villager proportions
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/main.ts')
+          s=p.read_text()
+          old="const villagerBodyGeo=new THREE.BoxGeometry(.42,.62,.32),villagerHeadGeo=new THREE.SphereGeometry(.2,8,6),villagerArmGeo=new THREE.CapsuleGeometry(.075,.38,3,6),villagerLegGeo=new THREE.BoxGeometry(.13,.42,.15),villagerBootGeo=new THREE.BoxGeometry(.16,.12,.22),villagerHairGeo=new THREE.SphereGeometry(.205,8,5),villagerBeltGeo=new THREE.BoxGeometry(.45,.075,.34);"
+          new="const villagerBodyGeo=new THREE.CapsuleGeometry(.19,.38,4,8),villagerHeadGeo=new THREE.SphereGeometry(.205,10,8),villagerArmGeo=new THREE.CapsuleGeometry(.065,.34,3,6),villagerLegGeo=new THREE.CapsuleGeometry(.075,.25,3,6),villagerBootGeo=new THREE.BoxGeometry(.16,.11,.23),villagerHairGeo=new THREE.SphereGeometry(.21,10,7),villagerBeltGeo=new THREE.BoxGeometry(.43,.07,.33),villagerNeckGeo=new THREE.CylinderGeometry(.075,.08,.11,8),villagerEarGeo=new THREE.SphereGeometry(.045,6,5),villagerNoseGeo=new THREE.SphereGeometry(.035,6,5);"
+          if old not in s: raise SystemExit('villager geometry not found')
+          s=s.replace(old,new,1)
+          old2="const g=new THREE.Group(),cloth=fabricMats[id%fabricMats.length];const body=new THREE.Mesh(villagerBodyGeo,cloth);body.position.y=.62;const head=new THREE.Mesh(villagerHeadGeo,skinMat);head.position.y=1.08;const hair=new THREE.Mesh(villagerHairGeo,hairMat);hair.scale.set(1.02,.55,1.02);hair.position.y=1.18;const belt=new THREE.Mesh(villagerBeltGeo,beltMat);belt.position.y=.48;const leftArm=new THREE.Mesh(villagerArmGeo,cloth);leftArm.position.set(-.27,.65,0);leftArm.rotation.z=-.08;const rightArm=new THREE.Mesh(villagerArmGeo,cloth);rightArm.position.set(.27,.65,0);rightArm.rotation.z=.08;const leftLeg=new THREE.Mesh(villagerLegGeo,bootMat);leftLeg.position.set(-.1,.25,0);const rightLeg=new THREE.Mesh(villagerLegGeo,bootMat);rightLeg.position.set(.1,.25,0);const leftBoot=new THREE.Mesh(villagerBootGeo,bootMat);leftBoot.position.set(-.1,.06,.035);const rightBoot=new THREE.Mesh(villagerBootGeo,bootMat);rightBoot.position.set(.1,.06,.035);g.add(body,head,hair,belt,leftArm,rightArm,leftLeg,rightLeg,leftBoot,rightBoot);"
+          new2="const g=new THREE.Group(),cloth=fabricMats[id%fabricMats.length];const body=new THREE.Mesh(villagerBodyGeo,cloth);body.position.y=.68;const neck=new THREE.Mesh(villagerNeckGeo,skinMat);neck.position.y=1.08;const head=new THREE.Mesh(villagerHeadGeo,skinMat);head.position.y=1.29;const hair=new THREE.Mesh(villagerHairGeo,hairMat);hair.scale.set(1.02,.58,1.02);hair.position.set(0,1.4,-.015);const belt=new THREE.Mesh(villagerBeltGeo,beltMat);belt.position.y=.47;const leftArm=new THREE.Mesh(villagerArmGeo,cloth);leftArm.position.set(-.245,.72,0);leftArm.rotation.z=-.12;const rightArm=new THREE.Mesh(villagerArmGeo,cloth);rightArm.position.set(.245,.72,0);rightArm.rotation.z=.12;const leftLeg=new THREE.Mesh(villagerLegGeo,bootMat);leftLeg.position.set(-.105,.23,0);const rightLeg=new THREE.Mesh(villagerLegGeo,bootMat);rightLeg.position.set(.105,.23,0);const leftBoot=new THREE.Mesh(villagerBootGeo,bootMat);leftBoot.position.set(-.105,.055,.055);const rightBoot=new THREE.Mesh(villagerBootGeo,bootMat);rightBoot.position.set(.105,.055,.055);const leftEar=new THREE.Mesh(villagerEarGeo,skinMat);leftEar.position.set(-.205,1.29,0);const rightEar=new THREE.Mesh(villagerEarGeo,skinMat);rightEar.position.set(.205,1.29,0);const nose=new THREE.Mesh(villagerNoseGeo,skinMat);nose.position.set(0,1.28,.2);g.add(body,neck,head,hair,belt,leftArm,rightArm,leftLeg,rightLeg,leftBoot,rightBoot,leftEar,rightEar,nose);"
+          if old2 not in s: raise SystemExit('villager creation block not found')
+          s=s.replace(old2,new2,1)
+          p.write_text(s)
+          PY
+      - name: Build
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+      - name: Commit and remove workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/main.ts .github/workflows/fix-villager-model.yml
+          git commit -m 'feat: improve villager 3D model' || exit 0
+          git push
+          git rm .github/workflows/fix-villager-model.yml
+          git commit -m 'chore: remove villager model patch workflow'
+          git push
