@@ -1,0 +1,31 @@
+name: Fix save API newlines
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Repair source and build
+        shell: bash
+        run: |
+          set -e
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/main.ts')
+          s=p.read_text()
+          s=s.replace('\\n','\n')
+          p.write_text(s)
+          PY
+          rm -f .github/workflows/fix-save-newlines.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/main.ts .github/workflows/fix-save-newlines.yml
+          git commit -m 'fix: repair save api formatting'
+          git push
+          npm install --no-audit --no-fund
+          npm run build
