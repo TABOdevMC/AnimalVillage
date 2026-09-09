@@ -32,32 +32,15 @@ body[data-quality="low"] canvas{image-rendering:auto}body[data-quality="low"] #p
 <div id="tech" class="window"><h3>🔬 Technologies</h3><div id="techRows"></div><button id="gainTech">+10 recherche</button></div>
 <div id="people" class="window"><h3>👥 Villageois</h3><div id="peopleRows"></div></div>
 <div id="weatherWin" class="window"><h3>Météo & climat</h3><div id="weatherInfo"></div></div>
-<div id="wikiWin" class="window"><h3>📖 Wiki d’AnimalVillage <button id="wikiClose" style="float:right">✕</button></h3><div class="wikiGrid">
- <div class="wikiCard"><b>🏗️ Construire</b><span class="small">Sélectionnez un bâtiment dans la barre du bas puis cliquez sur le terrain. Appuyez sur R pour tourner.</span><ul class="wikiList small"><li>Le bâtiment doit avoir assez de ressources.</li><li>Les cases occupées ne peuvent pas être réutilisées.</li><li>La construction consomme des travailleurs.</li></ul></div>
- <div class="wikiCard"><b>🏠 Bâtiments & population</b><span class="small">Les maisons augmentent la population maximale. Les bâtiments de production fournissent des ressources lorsqu’ils sont terminés.</span><ul class="wikiList small"><li>Ferme → nourriture</li><li>Scierie → bois</li><li>Carrière → pierre</li><li>Mine → métaux</li></ul></div>
- <div class="wikiCard"><b>🪙 Commerce</b><span class="small">Construisez et terminez un <strong>Marché</strong> avant d’acheter ou vendre des ressources. Les prix évoluent selon les stocks.</span></div>
- <div class="wikiCard"><b>⚔️ Armée</b><span class="small">Construisez une Caserne pour former des soldats. Les soldats consomment de la nourriture et améliorent la puissance militaire du village.</span></div>
- <div class="wikiCard"><b>🔬 Recherche & technologies</b><span class="small">L’École permet de générer des points de recherche sans Université. Dépensez-les ensuite pour débloquer les technologies et bâtiments avancés.</span><ul class="wikiList small"><li>Maçonnerie → fondations</li><li>Agriculture → moulin & boulangerie</li><li>Métallurgie → caserne & tour</li><li>Commerce → prix améliorés</li><li>Ingénierie → remparts & scierie améliorée</li><li>Érudition → recherche avancée</li></ul></div>
- <div class="wikiCard"><b>🌦️ Météo & saisons</b><span class="small">La météo change régulièrement et influence la production. Certaines conditions peuvent endommager les bâtiments. Les saisons tournent entre printemps, été, automne et hiver.</span></div>
- <div class="wikiCard"><b>🌲 Monde vivant</b><span class="small">Le terrain est généré par morceaux avec des arbres et des rochers. Seuls les morceaux proches de la caméra sont actifs afin de limiter les ralentissements.</span></div>
- <div class="wikiCard"><b>💾 Sauvegardes</b><span class="small">Ouvrez le menu Sauvegardes pour sauvegarder dans le navigateur, exporter une sauvegarde ou charger un fichier de sauvegarde.</span></div>
- <div class="wikiCard"><b>⌨️ Contrôles</b><ul class="wikiList small"><li><strong>WASD</strong> : déplacer la caméra</li><li><strong>Molette</strong> : zoomer</li><li><strong>Clic gauche</strong> : construire</li><li><strong>Clic droit</strong> : supprimer</li><li><strong>Shift + clic gauche</strong> : zone</li><li><strong>Shift + clic droit</strong> : supprimer la zone</li><li><strong>R</strong> : rotation</li><li><strong>Z</strong> : console admin</li></ul></div>
- </div></div>
+<div id="wikiWin" class="window"><h3>📖 Wiki d’AnimalVillage <button id="wikiClose" style="float:right">✕</button></h3><div class="wikiGrid"><div class="wikiCard"><b>🏗️ Construire</b><span class="small">Sélectionnez un bâtiment dans la barre du bas puis cliquez sur le terrain. Appuyez sur R pour tourner.</span></div><div class="wikiCard"><b>⌨️ Contrôles</b><span class="small">WASD · molette · clic gauche · clic droit · Shift · R · Z pour la console admin.</span></div></div></div>
 <div id="settingsWin" class="window"><h3>⚙️ Paramètres</h3><div class="settingCard"><div class="settingRow"><span>Volume</span><input id="volumeRange" type="range" min="0" max="100" value="70"><span id="volumeValue">70%</span></div><div class="settingRow"><span>Musique</span><button id="musicToggle">Activée</button></div><div class="settingRow"><span>Effets</span><button id="sfxToggle">Activés</button></div><div class="settingRow"><span>Qualité</span><select id="qualitySelect"><option value="low">Basse</option><option value="medium" selected>Moyenne</option><option value="high">Haute</option></select></div><div class="settingRow"><span>Animations</span><button id="animToggle">Activées</button></div><div class="settingRow"><span>Interface compacte</span><button id="compactToggle">Désactivée</button></div></div></div>
 <div id="adminWin" class="window"></div><div id="msg"></div><div id="tools"></div>
 <script src="./weatherVisuals.js"></script>
 <script type="module" src="./src/buildingArt.ts"></script>
 <script type="module" src="./src/main.ts"></script>
 <script type="module" src="./src/save.ts"></script>
+<script type="module" src="./src/adminBoot.ts"></script>
 <script type="module">import {installSettings} from './src/settings.ts';installSettings();</script>
-<script>
-(function(){
- const wiki=document.getElementById('wikiWin'),open=document.getElementById('wikiBtn'),close=document.getElementById('wikiClose');
- function toggle(show){if(wiki)wiki.classList.toggle('open',show===undefined?!wiki.classList.contains('open'):show)}
- open&&open.addEventListener('click',()=>toggle());close&&close.addEventListener('click',()=>toggle(false));
- document.addEventListener('keydown',e=>{if(e.key==='Escape'&&wiki?.classList.contains('open'))toggle(false)});
- // Les fenêtres principales restent indépendantes : ouvrir le Wiki ne modifie aucune mécanique du jeu.
-})();
-</script>
+<script>(function(){const wiki=document.getElementById('wikiWin'),open=document.getElementById('wikiBtn'),close=document.getElementById('wikiClose');function toggle(show){if(wiki)wiki.classList.toggle('open',show===undefined?!wiki.classList.contains('open'):show)}open&&open.addEventListener('click',()=>toggle());close&&close.addEventListener('click',()=>toggle(false));document.addEventListener('keydown',e=>{if(e.key==='Escape'&&wiki?.classList.contains('open'))toggle(false)})})();</script>
 </body>
 </html>
