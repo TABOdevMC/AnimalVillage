@@ -1,5 +1,7 @@
 name: Improve villagers visuals
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: write
@@ -22,9 +24,9 @@ jobs:
             for(let i=0;i<32;i+=4){x.fillRect(i,0,1,32);x.fillRect(0,i,32,1)}
             x.globalAlpha=.08;x.fillStyle='#ffffff';
             for(let i=0;i<32;i+=8)for(let j=0;j<32;j+=8)x.fillRect(i,j,3,3);
-            const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(1,1);t.colorSpace=THREE.SRGBColorSpace;return t;
+            const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;return t;
           }
-          const villagerBodyGeo=new THREE.BoxGeometry(.42,.62,.32),villagerHeadGeo=new THREE.SphereGeometry(.2,8,6),villagerArmGeo=new THREE.CapsuleGeometry(.075,.38,3,6),villagerLegGeo=new THREE.BoxGeometry(.13,.42,.15),villagerBootGeo=new THREE.BoxGeometry(.16,.12,.22),villagerHairGeo=new THREE.SphereGeometry(.205,8,5);
+          const villagerBodyGeo=new THREE.BoxGeometry(.42,.62,.32),villagerHeadGeo=new THREE.SphereGeometry(.2,8,6),villagerArmGeo=new THREE.CapsuleGeometry(.075,.38,3,6),villagerLegGeo=new THREE.BoxGeometry(.13,.42,.15),villagerBootGeo=new THREE.BoxGeometry(.16,.12,.22),villagerHairGeo=new THREE.SphereGeometry(.205,8,5),villagerBeltGeo=new THREE.BoxGeometry(.45,.075,.34);
           const skinMat=material(0xd8b18a),hairMat=material(0x49352a),beltMat=material(0x3a2920),bootMat=material(0x30251f);
           const fabricMats=[
             new THREE.MeshStandardMaterial({map:makeFabricTexture('#6d8f62','#d4c27a'),roughness:.92}),
@@ -33,11 +35,11 @@ jobs:
             new THREE.MeshStandardMaterial({map:makeFabricTexture('#8a704e','#e2c58b'),roughness:.92})
           ];
           function createVillager(id){
-            const g=new THREE.Group();const cloth=fabricMats[id%fabricMats.length];
+            const g=new THREE.Group(),cloth=fabricMats[id%fabricMats.length];
             const body=new THREE.Mesh(villagerBodyGeo,cloth);body.position.y=.62;
             const head=new THREE.Mesh(villagerHeadGeo,skinMat);head.position.y=1.08;
             const hair=new THREE.Mesh(villagerHairGeo,hairMat);hair.scale.set(1.02,.55,1.02);hair.position.y=1.18;
-            const belt=new THREE.Mesh(new THREE.BoxGeometry(.45,.075,.34),beltMat);belt.position.y=.48;
+            const belt=new THREE.Mesh(villagerBeltGeo,beltMat);belt.position.y=.48;
             const leftArm=new THREE.Mesh(villagerArmGeo,cloth);leftArm.position.set(-.27,.65,0);leftArm.rotation.z=-.08;
             const rightArm=new THREE.Mesh(villagerArmGeo,cloth);rightArm.position.set(.27,.65,0);rightArm.rotation.z=.08;
             const leftLeg=new THREE.Mesh(villagerLegGeo,bootMat);leftLeg.position.set(-.1,.25,0);
@@ -46,8 +48,7 @@ jobs:
             const rightBoot=new THREE.Mesh(villagerBootGeo,bootMat);rightBoot.position.set(.1,.06,.035);
             g.add(body,head,hair,belt,leftArm,rightArm,leftLeg,rightLeg,leftBoot,rightBoot);
             g.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false}});
-            g.position.set((Math.random()-.5)*12,0,(Math.random()-.5)*12);
-            scene.add(g);
+            g.position.set((Math.random()-.5)*12,0,(Math.random()-.5)*12);scene.add(g);
             return{id,mesh:g,target:new THREE.Vector3((Math.random()-.5)*18,0,(Math.random()-.5)*18),speed:1+Math.random(),hunger:100,energy:100,state:'Se promène',job:'Libre'}
           }
           function syncVillagers(){const count=Math.max(0,population()-soldiers);while(villagers.length<count)villagers.push(createVillager(villagers.length+1));while(villagers.length>count){const v=villagers.pop();scene.remove(v.mesh)}const jobs=['Agriculteur','Bûcheron','Mineur','Maçon','Artisan'];villagers.forEach((v,i)=>{v.hunger=Math.max(0,v.hunger-.12);v.energy=Math.max(0,v.energy-.08);if(v.hunger<25){v.state='Mange';v.hunger=Math.min(100,v.hunger+2)}else if(v.energy<20){v.state='Dort';v.energy=Math.min(100,v.energy+2)}else{v.state='Travaille';v.job=buildings.length?jobs[i%jobs.length]:'Libre';if(Math.random()<.015)v.target.set((Math.random()-.5)*18,0,(Math.random()-.5)*18)}const d=v.target.clone().sub(v.mesh.position);d.y=0;if(d.length()>.25)v.mesh.position.addScaledVector(d.normalize(),.035*v.speed)})}
@@ -63,10 +64,7 @@ jobs:
           p=Path('src/main.ts');s=p.read_text()
           old="const updateWorldChunks=installChunkedWorld(scene,camera);installSky(scene,camera);"
           new="const updateWorldChunks=installChunkedWorld(scene,camera);const updateSky=installSky(scene,camera);"
-          if old not in s: raise SystemExit('sky install line not found')
-          s=s.replace(old,new,1)
-          if 'updateSky();' not in s:
-              s=s.replace('updateWorldChunks();','updateWorldChunks();updateSky();',1)
+          if old in s: s=s.replace(old,new,1)
           p.write_text(s)
           PY
       - name: Commit and remove patch workflow
@@ -75,5 +73,6 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add src/main.ts .github/workflows/improve-villagers.yml
+          if git diff --cached --quiet; then exit 0; fi
           git commit -m 'feat: improve villager textures and 3D cloud shadows'
           git push
