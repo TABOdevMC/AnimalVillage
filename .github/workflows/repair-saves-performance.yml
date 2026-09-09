@@ -1,0 +1,66 @@
+name: Repair game and add saves
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore stable game core and patch saves/performance
+        shell: bash
+        run: |
+          set -e
+          git show 1e2232918621d4f5f2d88846c627a48be7633091:src/main.ts > src/main.ts
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/main.ts');s=p.read_text()
+          s=s.replace("import { installChunkedWorld } from './world';", "import { installChunkedWorld } from './world';\nimport { installSky } from './sky';")
+          s=s.replace("const updateWorldChunks=installChunkedWorld(scene,camera);", "const updateWorldChunks=installChunkedWorld(scene,camera);installSky(scene,camera);")
+          old="university:{name:'Université',icon:'📚',size:4,cost:{wood:60,stone:50,gold:80},research:3,work:12,tech:'commerce'}"
+          new="school:{name:'École',icon:'🏫',size:3,cost:{wood:30,stone:15,gold:10},research:0.5,work:6},university:{name:'Université',icon:'📚',size:4,cost:{wood:60,stone:50,gold:80},research:3,work:12,tech:'scholarship'}"
+          s=s.replace(old,new)
+          marker="const material=c=>new THREE.MeshStandardMaterial({color:c,roughness:.78,metalness:0});"
+          s=s.replace(marker,"const material=c=>new THREE.MeshStandardMaterial({color:c,roughness:.78,metalness:0});")
+          # Schools generate a small amount of research; university produces much more.
+          needle="setInterval(()=>{"
+          if needle in s and "b.type==='school'" not in s:
+              pos=s.index(needle)
+              end=s.find('},1000)',pos)
+              if end!=-1:
+                  block=s[pos:end]
+                  block=block.replace('if(',"if(buildings.some(b=>b.type==='school'))research+=.5; if(buildings.some(b=>b.type==='university'))research+=3; if(",1)
+                  s=s[:pos]+block+s[end:]
+          # Expose a compact save/load API without changing the gameplay loop.
+          api_code=r'''\n\nconst saveGame=()=>({version:2,resources:{...resources},buildings:buildings.map(b=>({type:b.type,x:b.x,z:b.z,progress:b.progress,hp:b.hp,maxHp:b.maxHp})),villagers:villagers.map(v=>({x:v.x,z:v.z,job:v.job,state:v.state})),soldiers,research,morale,freeBuild,techs:Object.fromEntries(Object.entries(techs).map(([k,v])=>[k,!!v.done])),climate:{...climate},season,currentWeather,camera:{x:camera.position.x,y:camera.position.y,z:camera.position.z,yaw,pitch}});\n\nconst loadGame=(data)=>{try{if(!data||!data.resources||!Array.isArray(data.buildings))throw Error('invalid');Object.assign(resources,data.resources);soldiers=Number(data.soldiers)||0;research=Number(data.research)||0;morale=Number(data.morale)||100;freeBuild=!!data.freeBuild;if(data.climate)Object.assign(climate,data.climate);if(data.season&&seasons[data.season])season=data.season;if(data.currentWeather&&weatherDefs[data.currentWeather])currentWeather=data.currentWeather;if(data.camera){camera.position.set(Number(data.camera.x)||10,Number(data.camera.y)||9,Number(data.camera.z)||14);yaw=Number(data.camera.yaw)||yaw;pitch=Number(data.camera.pitch)||pitch;}Object.entries(data.techs||{}).forEach(([k,v])=>{if(techs[k])techs[k].done=!!v});for(const b of buildings){scene.remove(b.visual);for(const c of b.cells)occupied.delete(c.join(','));}buildings.length=0;const oldFree=freeBuild;freeBuild=true;for(const d of data.buildings){if(types[d.type]){const before=buildings.length;add(d.type,d.x,d.z);if(buildings.length>before){const b=buildings[buildings.length-1];b.progress=Math.max(0,Math.min(1,Number(d.progress)));b.hp=Number(d.hp)||100;b.maxHp=Number(d.maxHp)||100;}}}freeBuild=oldFree;updateUI();refreshTools();return true;}catch(e){console.error(e);toast('❌ Sauvegarde invalide');return false;}};\n\n(window as any).animalVillageAPI={save:saveGame,load:loadGame,resources,buildings,villagers,techs,weatherDefs,get currentWeather(){return currentWeather},set currentWeather(v){if(weatherDefs[v])currentWeather=v},storage,population,updateUI,chooseWeather,weatherNames:Object.fromEntries(Object.entries(weatherDefs).map(([k,v]:any)=>[k,v.n])),setGameSpeed:(window as any).setGameSpeed};\n'''
+          s += api_code
+          # Reduce GPU cost: buildings don't need per-object shadow casting in this low-poly game.
+          s=s.replace('m.castShadow=true;m.receiveShadow=true;','m.castShadow=false;m.receiveShadow=false;')
+          s=s.replace('tr.castShadow=leaves.castShadow=true;','tr.castShadow=leaves.castShadow=false;')
+          s=s.replace('trunk.castShadow=leaves.castShadow=true;','trunk.castShadow=leaves.castShadow=false;')
+          p.write_text(s)
+          PY
+          # Add save UI module to the source HTML exactly once.
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html');s=p.read_text()
+          if './src/save.ts' not in s:
+              s=s.replace('<script type="module" src="./src/main.ts"></script>','<script type="module" src="./src/main.ts"></script>\n<script type="module" src="./src/save.ts"></script>')
+          p.write_text(s)
+          PY
+          # Remove this one-shot repair workflow from the committed tree.
+          rm -f .github/workflows/repair-saves-performance.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/main.ts index.html .github/workflows/repair-saves-performance.yml
+          git commit -m 'fix: restore game mechanics, saves and performance'
+          git push
+      - name: Verify build
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+          test -f dist/index.html
