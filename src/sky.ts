@@ -24,93 +24,45 @@ export function installSky(scene: THREE.Scene, camera: THREE.Camera) {
     sky.add(cloud);
   }
 
-  // Soleil 3D : sphère lumineuse dans le ciel, indépendante de l'interface.
-  // La lumière DirectionalLight déjà présente dans main.ts fournit les vraies ombres.
   const sunGroup=new THREE.Group();
   sunGroup.name='3DSun';
   sunGroup.position.set(38,38,-55);
+  const sunCore=new THREE.Mesh(new THREE.SphereGeometry(3.2,20,14),new THREE.MeshBasicMaterial({color:0xffef9a}));
+  const sunHalo=new THREE.Mesh(new THREE.SphereGeometry(5.8,16,12),new THREE.MeshBasicMaterial({color:0xffe58a,transparent:true,opacity:.16,depthWrite:false,blending:THREE.AdditiveBlending}));
+  const sunHalo2=new THREE.Mesh(new THREE.SphereGeometry(9,16,12),new THREE.MeshBasicMaterial({color:0xffd76a,transparent:true,opacity:.045,depthWrite:false,blending:THREE.AdditiveBlending}));
+  sunCore.renderOrder=5;sunHalo.renderOrder=4;sunHalo2.renderOrder=3;
+  sunGroup.add(sunCore,sunHalo,sunHalo2);sky.add(sunGroup);
 
-  const sunCore=new THREE.Mesh(
-    new THREE.SphereGeometry(3.2,20,14),
-    new THREE.MeshBasicMaterial({color:0xffef9a})
-  );
-  sunCore.renderOrder=5;
-  sunGroup.add(sunCore);
-
-  const sunHalo=new THREE.Mesh(
-    new THREE.SphereGeometry(5.8,16,12),
-    new THREE.MeshBasicMaterial({color:0xffe58a,transparent:true,opacity:.16,depthWrite:false,blending:THREE.AdditiveBlending})
-  );
-  sunHalo.renderOrder=4;
-  sunGroup.add(sunHalo);
-
-  const sunHalo2=new THREE.Mesh(
-    new THREE.SphereGeometry(9,16,12),
-    new THREE.MeshBasicMaterial({color:0xffd76a,transparent:true,opacity:.045,depthWrite:false,blending:THREE.AdditiveBlending})
-  );
-  sunHalo2.renderOrder=3;
-  sunGroup.add(sunHalo2);
-  sky.add(sunGroup);
-
-  // Éclair 3D : visible dans le ciel et accompagné d'un vrai flash lumineux.
   const lightningGroup=new THREE.Group();
-  lightningGroup.name='3DLightning';
-  lightningGroup.visible=false;
+  lightningGroup.name='3DLightning';lightningGroup.visible=false;
   const boltMat=new THREE.MeshBasicMaterial({color:0xeaf7ff});
   const glowMat=new THREE.MeshBasicMaterial({color:0x8fdcff,transparent:true,opacity:.45});
-  const boltLight=new THREE.PointLight(0xbfe9ff,0,60,2);
-  boltLight.castShadow=false;
-  lightningGroup.add(boltLight);
-
+  const boltLight=new THREE.PointLight(0xbfe9ff,0,60,2);boltLight.castShadow=false;lightningGroup.add(boltLight);
   const makeBolt=(mat:THREE.Material,radius:number)=>{
     const g=new THREE.Group();
     const points=[new THREE.Vector3(0,0,0),new THREE.Vector3(-.45,-2.1,.12),new THREE.Vector3(.3,-4.2,-.1),new THREE.Vector3(-.2,-6.2,.15),new THREE.Vector3(.1,-8.7,0)];
-    for(let i=0;i<points.length-1;i++){
-      const a=points[i],b=points[i+1],dir=b.clone().sub(a),len=dir.length();
-      const seg=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius*.72,len,5),mat);
-      seg.position.copy(a).add(b).multiplyScalar(.5);
-      seg.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.normalize());
-      g.add(seg);
-    }
+    for(let i=0;i<points.length-1;i++){const a=points[i],b=points[i+1],dir=b.clone().sub(a),len=dir.length();const seg=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius*.72,len,5),mat);seg.position.copy(a).add(b).multiplyScalar(.5);seg.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.normalize());g.add(seg)}
     return g;
   };
-  lightningGroup.add(makeBolt(glowMat,.13));
-  lightningGroup.add(makeBolt(boltMat,.055));
-  scene.add(lightningGroup);
+  lightningGroup.add(makeBolt(glowMat,.13),makeBolt(boltMat,.055));scene.add(lightningGroup);
 
   let flashTimer=2+Math.random()*5,flashTime=0,last=performance.now();
   const weatherEl=document.getElementById('weather');
-
-  const triggerLightning=()=>{
-    lightningGroup.position.set(camera.position.x+(Math.random()-.5)*30,29+Math.random()*4,camera.position.z+(Math.random()-.5)*30);
-    lightningGroup.rotation.y=Math.random()*Math.PI*2;
-    lightningGroup.visible=true;
-    flashTime=.24;
-    boltLight.intensity=14;
-  };
+  const triggerLightning=()=>{lightningGroup.position.set(camera.position.x+(Math.random()-.5)*30,29+Math.random()*4,camera.position.z+(Math.random()-.5)*30);lightningGroup.rotation.y=Math.random()*Math.PI*2;lightningGroup.visible=true;flashTime=.24;boltLight.intensity=14};
 
   scene.add(sky);
   const update=()=>{
-    sky.position.x=Math.round(camera.position.x/24)*24;
-    sky.position.z=Math.round(camera.position.z/24)*24;
+    // Le ciel reste centré sur la caméra sans saut par tronçons : les nuages ne se téléportent plus.
+    sky.position.x=camera.position.x;
+    sky.position.z=camera.position.z;
     const now=performance.now(),dt=Math.min(.05,(now-last)/1000);last=now;
     const weather=weatherEl?.textContent||'';
     const storm=weather.includes('Orage');
-
-    if(storm){
-      flashTimer-=dt;
-      if(flashTimer<=0){triggerLightning();flashTimer=4+Math.random()*8;}
-    }else{
-      flashTimer=2+Math.random()*5;
-      lightningGroup.visible=false;
-      boltLight.intensity=0;
-    }
-
-    if(flashTime>0){
-      flashTime-=dt;
-      boltLight.intensity=Math.max(0,14*(flashTime/.24));
-      if(flashTime<=0){lightningGroup.visible=false;boltLight.intensity=0;}
-    }
+    // Le soleil 3D est masqué dès que le temps n'est pas dégagé.
+    const clear=weather.includes('Beau temps')||weather.includes('Canicule');
+    sunGroup.visible=clear;
+    if(storm){flashTimer-=dt;if(flashTimer<=0){triggerLightning();flashTimer=4+Math.random()*8}}else{flashTimer=2+Math.random()*5;lightningGroup.visible=false;boltLight.intensity=0}
+    if(flashTime>0){flashTime-=dt;boltLight.intensity=Math.max(0,14*(flashTime/.24));if(flashTime<=0){lightningGroup.visible=false;boltLight.intensity=0}}
   };
   update();
   return update;
