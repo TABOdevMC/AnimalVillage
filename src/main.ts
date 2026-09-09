@@ -37,7 +37,7 @@ const seasons:any={printemps:{t:.55,h:.62,w:.35},ete:{t:.82,h:.48,w:.28},automne
   for(let i=0;i<32;i+=8)for(let j=0;j<32;j+=8)x.fillRect(i,j,3,3);
   const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;return t;
 }
-const villagerBodyGeo=new THREE.BoxGeometry(.42,.62,.32),villagerHeadGeo=new THREE.SphereGeometry(.2,8,6),villagerArmGeo=new THREE.CapsuleGeometry(.075,.38,3,6),villagerLegGeo=new THREE.BoxGeometry(.13,.42,.15),villagerBootGeo=new THREE.BoxGeometry(.16,.12,.22),villagerHairGeo=new THREE.SphereGeometry(.205,8,5),villagerBeltGeo=new THREE.BoxGeometry(.45,.075,.34);
+const villagerBodyGeo=new THREE.CapsuleGeometry(.19,.38,4,8),villagerHeadGeo=new THREE.SphereGeometry(.205,10,8),villagerArmGeo=new THREE.CapsuleGeometry(.065,.34,3,6),villagerLegGeo=new THREE.CapsuleGeometry(.075,.25,3,6),villagerBootGeo=new THREE.BoxGeometry(.16,.11,.23),villagerHairGeo=new THREE.SphereGeometry(.21,10,7),villagerBeltGeo=new THREE.BoxGeometry(.43,.07,.33),villagerNeckGeo=new THREE.CylinderGeometry(.075,.08,.11,8),villagerEarGeo=new THREE.SphereGeometry(.045,6,5),villagerNoseGeo=new THREE.SphereGeometry(.035,6,5);
 const skinMat=material(0xd8b18a),hairMat=material(0x49352a),beltMat=material(0x3a2920),bootMat=material(0x30251f);
 const fabricMats=[
   new THREE.MeshStandardMaterial({map:makeFabricTexture('#6d8f62','#d4c27a'),roughness:.92}),
@@ -47,17 +47,21 @@ const fabricMats=[
 ];
 function createVillager(id){
   const g=new THREE.Group(),cloth=fabricMats[id%fabricMats.length];
-  const body=new THREE.Mesh(villagerBodyGeo,cloth);body.position.y=.62;
-  const head=new THREE.Mesh(villagerHeadGeo,skinMat);head.position.y=1.08;
-  const hair=new THREE.Mesh(villagerHairGeo,hairMat);hair.scale.set(1.02,.55,1.02);hair.position.y=1.18;
-  const belt=new THREE.Mesh(villagerBeltGeo,beltMat);belt.position.y=.48;
-  const leftArm=new THREE.Mesh(villagerArmGeo,cloth);leftArm.position.set(-.27,.65,0);leftArm.rotation.z=-.08;
-  const rightArm=new THREE.Mesh(villagerArmGeo,cloth);rightArm.position.set(.27,.65,0);rightArm.rotation.z=.08;
-  const leftLeg=new THREE.Mesh(villagerLegGeo,bootMat);leftLeg.position.set(-.1,.25,0);
-  const rightLeg=new THREE.Mesh(villagerLegGeo,bootMat);rightLeg.position.set(.1,.25,0);
-  const leftBoot=new THREE.Mesh(villagerBootGeo,bootMat);leftBoot.position.set(-.1,.06,.035);
-  const rightBoot=new THREE.Mesh(villagerBootGeo,bootMat);rightBoot.position.set(.1,.06,.035);
-  g.add(body,head,hair,belt,leftArm,rightArm,leftLeg,rightLeg,leftBoot,rightBoot);
+  const body=new THREE.Mesh(villagerBodyGeo,cloth);body.position.y=.68;
+  const neck=new THREE.Mesh(villagerNeckGeo,skinMat);neck.position.y=1.08;
+  const head=new THREE.Mesh(villagerHeadGeo,skinMat);head.position.y=1.29;
+  const hair=new THREE.Mesh(villagerHairGeo,hairMat);hair.scale.set(1.02,.58,1.02);hair.position.set(0,1.4,-.015);
+  const belt=new THREE.Mesh(villagerBeltGeo,beltMat);belt.position.y=.47;
+  const leftArm=new THREE.Mesh(villagerArmGeo,cloth);leftArm.position.set(-.245,.72,0);leftArm.rotation.z=-.12;
+  const rightArm=new THREE.Mesh(villagerArmGeo,cloth);rightArm.position.set(.245,.72,0);rightArm.rotation.z=.12;
+  const leftLeg=new THREE.Mesh(villagerLegGeo,bootMat);leftLeg.position.set(-.105,.23,0);
+  const rightLeg=new THREE.Mesh(villagerLegGeo,bootMat);rightLeg.position.set(.105,.23,0);
+  const leftBoot=new THREE.Mesh(villagerBootGeo,bootMat);leftBoot.position.set(-.105,.055,.055);
+  const rightBoot=new THREE.Mesh(villagerBootGeo,bootMat);rightBoot.position.set(.105,.055,.055);
+  const leftEar=new THREE.Mesh(villagerEarGeo,skinMat);leftEar.position.set(-.205,1.29,0);
+  const rightEar=new THREE.Mesh(villagerEarGeo,skinMat);rightEar.position.set(.205,1.29,0);
+  const nose=new THREE.Mesh(villagerNoseGeo,skinMat);nose.position.set(0,1.28,.2);
+  g.add(body,neck,head,hair,belt,leftArm,rightArm,leftLeg,rightLeg,leftBoot,rightBoot,leftEar,rightEar,nose);
   g.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false}});
   g.position.set((Math.random()-.5)*12,0,(Math.random()-.5)*12);scene.add(g);
   return{id,mesh:g,target:new THREE.Vector3((Math.random()-.5)*18,0,(Math.random()-.5)*18),speed:1+Math.random(),hunger:100,energy:100,state:'Se promène',job:'Libre'}
