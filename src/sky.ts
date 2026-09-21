@@ -21,8 +21,6 @@ export function installSky(scene: THREE.Scene, camera: THREE.Camera) {
       const t=j/Math.max(1,puffs-1);
       puff.position.set((t-.5)*size*1.15,Math.sin(j*1.7)*.35,(j%2?.25:-.2)*size);
       puff.scale.set(size*(.48+(j%3)*.08),size*(.28+(j%2)*.08)*stretch,size*(.34+((j+1)%3)*.06));
-      // Les nuages restent éclairés en 3D mais ne projettent pas d'ombres
-      // sur le terrain : cela évite les artefacts de shadow-map rayés au sol.
       puff.castShadow=false; puff.receiveShadow=false; cloud.add(puff);
     }
     clouds.push(cloud); sky.add(cloud);
@@ -46,21 +44,24 @@ export function installSky(scene: THREE.Scene, camera: THREE.Camera) {
   const snowMat=new THREE.PointsMaterial({color:0xffffff,size:.25,transparent:true,opacity:.9,depthWrite:false,sizeAttenuation:true});
   const snow=new THREE.Points(snowGeo,snowMat);snow.name='SnowParticles';precipitation.add(snow);precipitation.visible=false;sky.add(precipitation);
 
-  // Effet de vent : longues particules translucides, plus rapides pendant l'ouragan.
   const windCount=150,windPos=new Float32Array(windCount*3),windVel=new Float32Array(windCount);
   for(let i=0;i<windCount;i++){const k=i*3;windPos[k]=(Math.random()-.5)*90;windPos[k+1]=1+Math.random()*25;windPos[k+2]=(Math.random()-.5)*90;windVel[i]=10+Math.random()*16;}
   const windGeo=new THREE.BufferGeometry();windGeo.setAttribute('position',new THREE.BufferAttribute(windPos,3));
   const windMat=new THREE.PointsMaterial({color:0xe1eef0,size:.09,transparent:true,opacity:.32,depthWrite:false,sizeAttenuation:true});
   const wind=new THREE.Points(windGeo,windMat);wind.name='WindGusts';wind.visible=false;sky.add(wind);
 
-  // Vortex 3D de l'ouragan, discret mais clairement visible depuis le sol.
+  // Anneau de circulation de l'ouragan : effet purement visuel, sans gros cône.
+  // Il reste positionné en coordonnées locales du groupe sky, donc il ne se téléporte pas avec un double offset caméra.
   const hurricane=new THREE.Group();hurricane.name='3DHurricaneVortex';hurricane.visible=false;
-  const vortexMat=new THREE.MeshBasicMaterial({color:0x71858c,transparent:true,opacity:.24,depthWrite:false,side:THREE.DoubleSide});
-  const vortexCore=new THREE.Mesh(new THREE.CylinderGeometry(.7,4.8,18,28,1,true),vortexMat);vortexCore.position.y=10;
-  const vortexTop=new THREE.Mesh(new THREE.TorusGeometry(5.2,.42,10,36),new THREE.MeshBasicMaterial({color:0x9eafb3,transparent:true,opacity:.32,depthWrite:false}));vortexTop.rotation.x=Math.PI/2;vortexTop.position.y=19;
-  hurricane.add(vortexCore,vortexTop);sky.add(hurricane);
+  const vortexMat=new THREE.MeshBasicMaterial({color:0x7b8b91,transparent:true,opacity:.28,depthWrite:false,side:THREE.DoubleSide});
+  const vortexRings: THREE.Mesh[]=[];
+  for(let i=0;i<3;i++){
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(4.5+i*2.2,.22+i*.05,8,40),vortexMat);
+    ring.rotation.x=Math.PI/2; ring.position.y=8+i*4; ring.rotation.z=i*.7; ring.scale.y=.62;
+    ring.userData.baseY=ring.position.y; ring.userData.phase=i*1.8; vortexRings.push(ring); hurricane.add(ring);
+  }
+  sky.add(hurricane);
 
-  // Éclairs ramifiés + flash lumineux.
   const lightningGroup=new THREE.Group();lightningGroup.name='3DLightning';lightningGroup.visible=false;
   const boltMat=new THREE.MeshBasicMaterial({color:0xeaf7ff});const glowMat=new THREE.MeshBasicMaterial({color:0x8fdcff,transparent:true,opacity:.45});
   const boltLight=new THREE.PointLight(0xbfe9ff,0,65,2);lightningGroup.add(boltLight);
@@ -102,7 +103,17 @@ export function installSky(scene: THREE.Scene, camera: THREE.Camera) {
     if(wind.visible){const pos=windGeo.attributes.position.array as Float32Array;for(let i=0;i<windCount;i++){const k=i*3;pos[k]+=windVel[i]*dt*(hurricaneWeather?3.2:1);pos[k+2]+=windVel[i]*dt*(hurricaneWeather?.55:.12);if(pos[k]>48||pos[k+1]<1){pos[k]=-48-Math.random()*12;pos[k+1]=1+Math.random()*25;pos[k+2]=(Math.random()-.5)*90;}}windGeo.attributes.position.needsUpdate=true;}
 
     hurricane.visible=hurricaneWeather;
-    if(hurricaneWeather){hurricane.position.set(camera.position.x+Math.sin(cloudTime*.08)*18,0,camera.position.z-18+Math.cos(cloudTime*.07)*12);hurricane.rotation.y+=dt*.35;hurricane.scale.setScalar(1+.08*Math.sin(cloudTime*2));}
+    if(hurricaneWeather){
+      // Position locale : sky est déjà centré sur la caméra.
+      hurricane.position.set(Math.sin(cloudTime*.08)*18,0,-18+Math.cos(cloudTime*.07)*12);
+      hurricane.rotation.y+=dt*.35;
+      hurricane.scale.setScalar(1+.08*Math.sin(cloudTime*2));
+      vortexRings.forEach((ring,i)=>{
+        ring.position.y=Number(ring.userData.baseY)+Math.sin(cloudTime*1.5+Number(ring.userData.phase))*.5;
+        ring.rotation.z+=dt*(.25+i*.12);
+        ring.scale.x=.9+.15*Math.sin(cloudTime*1.2+i);
+      });
+    }
 
     if(storm||hurricaneWeather){flashTimer-=dt;if(flashTimer<=0){triggerLightning();flashTimer=(hurricaneWeather?2.5:4)+Math.random()*(hurricaneWeather?5:8);}}else{flashTimer=2+Math.random()*5;lightningGroup.visible=false;boltLight.intensity=0;}
     if(flashTime>0){flashTime-=dt;boltLight.intensity=Math.max(0,18*(flashTime/.24));if(flashTime<=0){lightningGroup.visible=false;boltLight.intensity=0;}}
