@@ -21,7 +21,9 @@ export function installSky(scene: THREE.Scene, camera: THREE.Camera) {
       const t=j/Math.max(1,puffs-1);
       puff.position.set((t-.5)*size*1.15,Math.sin(j*1.7)*.35,(j%2?.25:-.2)*size);
       puff.scale.set(size*(.48+(j%3)*.08),size*(.28+(j%2)*.08)*stretch,size*(.34+((j+1)%3)*.06));
-      puff.castShadow=true; puff.receiveShadow=true; cloud.add(puff);
+      // Les nuages restent éclairés en 3D mais ne projettent pas d'ombres
+      // sur le terrain : cela évite les artefacts de shadow-map rayés au sol.
+      puff.castShadow=false; puff.receiveShadow=false; cloud.add(puff);
     }
     clouds.push(cloud); sky.add(cloud);
   }
